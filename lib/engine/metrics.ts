@@ -761,7 +761,7 @@ export function showupDrivers(data: Dataset, asOf: string) {
     return { segment: type, registrants: group.length, attended: att, showUpPct: group.length ? r1((att / group.length) * 100) : null };
   });
   const noEng = regs.filter((pid) => !["event_question_submitted", "nurture_email_opened", "nurture_email_clicked", "brochure_download"].some((t) => types.get(t)?.has(pid)));
-  byEngagement.push({ segment: "no question, email open/click or brochure", registrants: noEng.length, attended: noEng.filter((pid) => s.attendees.has(pid)).length, showUpPct: noEng.length ? r1((noEng.filter((pid) => s.attendees.has(pid)).length / noEng.length) * 100) : null });
+  byEngagement.push({ segment: "none of: question, email open or click, brochure download", registrants: noEng.length, attended: noEng.filter((pid) => s.attendees.has(pid)).length, showUpPct: noEng.length ? r1((noEng.filter((pid) => s.attendees.has(pid)).length / noEng.length) * 100) : null });
   const buckets = new Map<string, { n: number; a: number }>();
   for (const [pid, r] of s.personReg) {
     const weeks = Math.floor((p.event.startMs - r.ms) / (7 * 86400000));

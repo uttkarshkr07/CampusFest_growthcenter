@@ -63,6 +63,7 @@ describe("actionList", () => {
     expect(group(MAR15, "gate_failed_not_admitted").count).toBe(0);
     const g = group(MAR15, "confirmed_not_engaged");
     expect(g.laterAttended).toBeNull();
+    expect(g.laterDidNotAttend).toBeNull();
     expect(E.actionMembers(d, MAR15, "confirmed_not_engaged").every((m) => m.attended === null)).toBe(true);
     expect(E.actionList(d, MAR15, "confirmed_not_engaged").caveats.join(" ")).toMatch(/NOT yet known/);
   });
@@ -121,6 +122,14 @@ describe("whatIf", () => {
   });
 });
 
+describe("scan queries", () => {
+  const scans = (filters: { field: string; op: "eq"; values: string[] }[]) => E.query(loadSeed(), { asOf: "2025-04-20", dataset: "scans", filters }).caveats.join(" ");
+  it("warn when non-visitors are still counted", () => {
+    expect(scans([{ field: "result", op: "eq", values: ["admitted"] }])).toMatch(/do not count as visitors/);
+    expect(scans([{ field: "counts_as_attendance", op: "eq", values: ["true"] }])).not.toMatch(/do not count as visitors/);
+  });
+});
+
 describe("strict hindsight", () => {
   const d = loadSeed();
   const task = (id: string, asOf: string) => ({ id, title: `from ${asOf}`, description: null, campaign_id: null, owner_id: null, due_at: null, status: "todo" as const, priority: "low" as const, origin: "copilot" as const, origin_ref: { asOf }, created_at: "2026-11-27T00:00:00Z", updated_at: "2026-11-27T00:00:00Z" });
@@ -160,7 +169,8 @@ describe("strict hindsight", () => {
   });
   it("puts no post-event outcome in a pre-event summary", () => {
     const s = E.buildSummary(d, MAR15);
-    expect(s.funnel.actualAttendees).toBe(0);
+    expect(s.funnel.actualAttendees).toBeNull();
+    expect(s.registrationPace).not.toBeNull();
     expect(s.dataAvailable.checkins.rows).toBe(0);
     expect(s.campaigns.rows.every((r) => r[6] === null && r[7] === null && r[10] === null)).toBe(true);
     expect(JSON.stringify(s)).not.toMatch(/2025 data|from 2025-04-20/);

@@ -132,6 +132,25 @@ describe("loop", () => {
     expect(hrefFor("campaign", "../../x")).toBe("/campaigns");
   });
 
+  it("tells the model before its last request that lookups are over", async () => {
+    const { run, seen } = turn([[call("funnel")], [call("flags")], [say("done")]]);
+    await run;
+    expect(JSON.stringify(seen[1].contents)).not.toMatch(/No more lookups/);
+    expect(seen[2].contents.at(-1)!.parts.at(-1)!.text).toMatch(/No more lookups/);
+  });
+
+  it("turns a typed-out button into a real one, for known targets only", async () => {
+    const m = await turn([[say("I can't edit it. [Take me there](openInApp?target=campaign&id=C02&label=Edit budget)")]]).run;
+    expect(m.actions).toEqual([{ type: "link", id: "id1", label: "Edit budget", href: "/campaigns?focus=C02" }]);
+    expect(m.text).toBe("I can't edit it. Use the button below.");
+    const bad = await turn([[say("See [here](openInApp?target=https://evil.example&label=x)")]]).run;
+    expect([bad.actions, bad.text]).toEqual([[], "See"]);
+  });
+
+  it("drops a heading left with nothing under it", async () => {
+    expect((await turn([[say("**Answer**\nNo.\n\n**Next step**")]]).run).text).toBe("**Answer**\nNo.");
+  });
+
   it("waits once on a per-minute limit", async () => {
     const { run, seen } = turn([new ModelError("rate", "slow", 5), [say("ok")]]);
     expect((await run).text).toBe("ok");

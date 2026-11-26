@@ -215,6 +215,8 @@ export interface QueryValue {
   groups: Record<string, string | number | null>[];
   groupsShown: number;
   groupsTotal: number;
+  /** the group with the highest first measure among ALL groups, whatever the order or limit */
+  largestGroup: Record<string, string | number | null> | null;
 }
 
 export function query(data: Dataset, spec: QuerySpec): Result<QueryValue | null> {
@@ -274,10 +276,13 @@ export function query(data: Dataset, spec: QuerySpec): Result<QueryValue | null>
     return Number(b[measures[0]] ?? 0) - Number(a[measures[0]] ?? 0);
   });
   const limit = Math.max(1, Math.min(60, spec.limit ?? 30));
+  const largestGroup = groups.reduce<(typeof groups)[number] | null>((best, g) => (!best || Number(g[measures[0]] ?? 0) > Number(best[measures[0]] ?? 0) ? g : best), null);
 
   const caveats = baseCaveats(s);
   if (groups.length > limit) caveats.push(`Only ${limit} of ${groups.length} groups are shown; totals cover every matching row.`);
   if (groupBy.some((g) => g === "interaction_types" || g === "attended_days")) caveats.push("A person can appear in several of these groups, so the groups do not add up to the total.");
+  if (spec.dataset === "scans" && !filters.some((f) => f.field === "counts_as_attendance" || f.field === "person_type") && !groupBy.includes("counts_as_attendance") && !groupBy.includes("person_type"))
+    caveats.unshift("WARNING: these scans include people who do not count as visitors (internal, staff, test). For attendance figures, run the query again with counts_as_attendance eq true.");
   if (spec.dataset === "daily_marketing") caveats.push("These are anonymous event counts, not people. Reach is not offered because summing it does not give unique people.");
 
   const basis = [DEF.asOf, DEF.dedup, `Query on ${spec.dataset}; filters: ${filters.length ? filters.map((f) => `${f.field} ${f.op} ${f.values.join("|")}`).join("; ") : "none"}${groupBy.length ? `; grouped by ${groupBy.join(", ")}` : ""}.`];
@@ -286,7 +291,7 @@ export function query(data: Dataset, spec: QuerySpec): Result<QueryValue | null>
   if (spec.dataset === "daily_marketing") basis.push(DEF.spend);
 
   return {
-    value: { asOf: s.label, dataset: spec.dataset, matchedRows: rows.length, totals: compute(rows), groups: groups.slice(0, limit), groupsShown: Math.min(limit, groups.length), groupsTotal: groups.length },
+    value: { asOf: s.label, dataset: spec.dataset, matchedRows: rows.length, totals: compute(rows), groups: groups.slice(0, limit), groupsShown: Math.min(limit, groups.length), groupsTotal: groups.length, largestGroup },
     basis,
     caveats,
   };

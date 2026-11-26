@@ -95,7 +95,7 @@ export const catalog = {
   },
   query: {
     description:
-      "Slice and count the data for questions the other tools do not cover. " +
+      "Slice and count the data for questions the other tools do not cover. For the busiest or biggest group (an hour, a day, a campaign), group by that field and read largestGroup, which covers every group whatever the order or limit. To count people by how many event days they came, use dataset people with the field days_attended. " +
       QUERY_DATASETS.map((k) => `Dataset ${k}: fields ${Object.entries(QUERY_DEFS[k].fields).map(([f, h]) => `${f} (${h})`).join(", ")}; measures ${Object.keys(QUERY_DEFS[k].measures).join(", ")}.`).join(" "),
     input: z.object({
       asOf,

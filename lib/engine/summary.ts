@@ -1,6 +1,6 @@
 // The compact brief sent with every copilot question, so common questions need one model request.
 // Everything here is computed by the engine from current data; nothing is written by hand.
-import { campaignTable, DEF, flags, funnel, projection, tasksView, targetsVsActuals } from "./metrics";
+import { campaignTable, DEF, flags, funnel, pace, projection, tasksView, targetsVsActuals } from "./metrics";
 import { prepare } from "./prepare";
 import { daysBetween, resolveAsOf } from "./time";
 import { SOURCE_TABLES, type Dataset } from "./types";
@@ -25,8 +25,9 @@ export function buildSummary(data: Dataset, asOf: string) {
   const fl = flags(view, asOf);
   const phase = f.value.phase;
   const proj = phase === "pre-event" ? projection(view, asOf) : null;
+  const speed = phase === "pre-event" ? pace(view, asOf) : null;
   const tasks = tasksView(view, asOf).value;
-  const caveats = [...new Set([...t.caveats, ...f.caveats, ...c.caveats, ...fl.caveats, ...(proj?.caveats ?? [])])];
+  const caveats = [...new Set([...t.caveats, ...f.caveats, ...c.caveats, ...fl.caveats, ...(proj?.caveats ?? []), ...(speed?.caveats ?? [])])];
 
   return {
     selectedDate: asOf,
@@ -40,8 +41,8 @@ export function buildSummary(data: Dataset, asOf: string) {
     },
     funnel: {
       stages: f.value.stages.map((s) => [s.label, s.count]),
-      walkIns: f.value.walkIns,
-      actualAttendees: f.value.actualAttendees,
+      walkIns: phase === "pre-event" ? null : f.value.walkIns,
+      actualAttendees: phase === "pre-event" ? null : f.value.actualAttendees, // null = not known yet
       confirmedNoShows: f.value.confirmedNoShows,
       biggestLeak: f.value.biggestLeak,
       registrationStatusAtSnapshot: f.value.statusAtSnapshot,
@@ -53,7 +54,10 @@ export function buildSummary(data: Dataset, asOf: string) {
       unattributed: c.value.unattributed,
     },
     flags: fl.value.flags.map((x) => ({ id: x.campaign_id, level: x.level, reason: x.reason })),
-    projection: proj ? { confirmedNow: proj.value.confirmedNow, low: proj.value.low, mid: proj.value.mid, high: proj.value.high, goal: proj.value.goal, assumptions: proj.value.assumptions } : null,
+    registrationPace: speed
+      ? { registered: speed.value.latest?.registered ?? null, targetLineToday: speed.value.latest?.targetLine ?? null, gapToLine: speed.value.gapToLine, registrationGoal: speed.value.latest?.goal ?? null, daysToEvent: speed.value.daysToEvent, avgDailyLast7: speed.value.avgDailyLast7, requiredDailyToGoal: speed.value.requiredDailyToGoal }
+      : null,
+    projection: proj ? { countsOnly: "people confirmed by the selected date; not a forecast of the final number", confirmedNow: proj.value.confirmedNow, low: proj.value.low, mid: proj.value.mid, high: proj.value.high, goal: proj.value.goal, assumptions: proj.value.assumptions } : null,
     tasks: { byStatus: tasks.byStatus, overdue: tasks.overdue },
     team: view.team.map((m) => ({ owner_id: m.owner_id, name: m.owner_name, team: m.team })),
     dataAvailable: availability(view),

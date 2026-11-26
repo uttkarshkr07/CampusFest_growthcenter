@@ -156,7 +156,7 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
     assumptions.push(`ASSUMPTION: capacity of ${spec.capacityAttendees} distinct attendees, as given in the question.`);
     if (hi.attendees != null && hi.attendees > spec.capacityAttendees) caveats.push(`The upper result (${hi.attendees}) is above the stated capacity of ${spec.capacityAttendees}.`);
   } else caveats.push("Venue capacity is not in the data, so these results are not capacity-checked.");
-  if (!totalIsMeaningful) caveats.push("The result is a change compared with spending the unspent budget the way it has been spent so far. No new total is given: today's projection leaves out registrations that future spend would bring.");
+  if (!totalIsMeaningful) caveats.push("The result is a change compared with spending the unspent budget the way it has been spent so far. No new total is given, and none may be worked out by adding this change to the projection or subtracting it: the projection counts only people already confirmed, and changing future spend does not remove or add any of them.");
   if (lo.attendeeChange < 0 && hi.attendeeChange > 0) caveats.push("The range spans both a loss and a gain: the data cannot say whether this change helps.");
   caveats.push("This is arithmetic on observed averages, not evidence that the change would cause these results.");
 

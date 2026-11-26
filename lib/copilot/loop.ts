@@ -9,6 +9,9 @@ export const MAX_REQUESTS = 3;
 const HISTORY_TURNS = 6;
 const HISTORY_ANSWER_CHARS = 1200;
 const TOOL_RESPONSE_CHARS = 14000;
+const LAST_ROUND_NOTE = "No more lookups are available for this question. Do not call any function. Answer now from the SUMMARY and the results above, and say what is still missing.";
+// some small models type the button call out as a Markdown link instead of calling the function
+const TYPED_BUTTON = /\[[^\]\n]*\]\(\s*openInApp\?([^)\n]*)\)/g;
 
 export type ToolRunner = (name: string, args: unknown) => { ok: boolean; asOfUsed: string; result?: unknown; error?: string };
 
@@ -145,11 +148,24 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
       if (needsAnotherRound) texts.push("**What the data can't tell**\nI reached the lookup limit for one question, so this answer is incomplete. Ask a narrower follow-up.");
       break;
     }
-    contents.push({ role: "model", parts: reply.parts }, { role: "user", parts: responses });
+    const lastNext = round === max - 2;
+    contents.push({ role: "model", parts: reply.parts }, { role: "user", parts: lastNext ? [...responses, { text: LAST_ROUND_NOTE }] : responses });
     input.onStatus?.("Writing the answer...");
   }
 
-  let answer = texts.join("\n\n").trim();
+  // only allowlisted targets become buttons; the typed link itself is never shown
+  let answer = texts
+    .join("\n\n")
+    .replace(TYPED_BUTTON, (_all, queryText: string) => {
+      const typed = new URLSearchParams(queryText);
+      const href = hrefFor(typed.get("target") ?? "", typed.get("id") ?? undefined);
+      if (!href) return "";
+      if (!actions.some((a) => a.type === "link" && a.href === href)) actions.push({ type: "link", id: newId(), label: str(typed.get("label"), 60) || "Take me there", href });
+      return "Use the button below.";
+    })
+    .trim()
+    .replace(/\n\s*\*\*[^*\n]+\*\*:?$/, "") // a heading left with nothing under it
+    .trim();
   if (!answer && actions.length) answer = actions.some((a) => a.type === "task") ? "I drafted a task below. Review it, edit anything, then confirm. Nothing is saved yet." : "I can't make that change myself. Use the button below.";
   if (!answer) throw new ModelError("upstream", "The model returned an empty reply. Please try again.");
 

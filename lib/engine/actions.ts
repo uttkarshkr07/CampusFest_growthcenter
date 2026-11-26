@@ -104,6 +104,7 @@ export function actionList(data: Dataset, asOf: string, cohort?: Cohort) {
         .sort((a, b) => b.count - a.count),
       examples: list.slice(0, cohort ? 5 : 0).map((m) => ({ person_id: m.person_id, person_name: m.person_name, campaign_id: m.campaign_id, note: m.note })),
       laterAttended: attended,
+      laterDidNotAttend: attended == null ? null : list.length - attended,
       laterShowUpPct: attended != null && list.length ? Math.round((attended / list.length) * 1000) / 10 : null,
     };
   });
