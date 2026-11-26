@@ -1,0 +1,446 @@
+[
+ {
+  "name": "funnel",
+  "description": "Growth funnel (identified, started registration, registered, confirmed, attended) plus walk-ins, no-shows and the biggest leak.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "targetsVsActuals",
+  "description": "Goals in force vs actuals: identified, registered, verified visitors (projected before the event), spend vs budget.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "campaignTable",
+  "description": "Per-campaign KPIs: spend, identified, registered, confirmed, attended, show-up %, INR per registration / confirmed / actual attendee, share of spend vs attendees, engaged share, plan budget and status.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "flags",
+  "description": "Scale / watch / stop flag for each campaign with a plain-English reason and the numbers behind it.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "projection",
+  "description": "Before the event: projected verified visitors (low/mid/high) from confirmed registrants and Settings assumptions. After: the actual and the error of the day-before projection.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "pace",
+  "description": "Daily cumulative registrations vs a linear target line, average daily rate over the last 7 days and the rate required to reach the goal.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "momentum",
+  "description": "What is driving change: registrations and spend per campaign in the last N days vs the N days before, plus recent data edits.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "windowDays": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 60
+    }
+   }
+  }
+ },
+ {
+  "name": "showupDrivers",
+  "description": "After the event: show-up rate by engagement type and by registration lead time (associations, not causes).",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "query",
+  "description": "Slice and count the data for questions the other tools do not cover. Dataset people: fields person_id (stable id), person_type (external | internal | staff | test), first_touch_source (first source seen), first_campaign_id (first-touch campaign), campaign_id (acquisition campaign from the registration), registered (true/false), registered_day (YYYY-MM-DD), weeks_before_event (whole weeks between registration and event start), status (interested | confirmed | cancelled | waitlisted (at as-of, or at event start once it began)), confirmed (true/false), engaged (submitted an event question), interaction_types (list; use op 'contains'), attended (true/false), walk_in (attended without a registration), days_attended (number of event days attended), attended_days (list of YYYY-MM-DD; use op 'contains'), first_attended_day (YYYY-MM-DD); measures people, registered, confirmed, engaged, attended, walk_ins, show_up_pct. Dataset scans: fields person_id (stable id), person_type (external | internal | staff | test), day (YYYY-MM-DD (IST)), hour (0-23 (IST)), result (admitted | denied | pending), verification (verified | unverified), source (scanner | manual), campaign_id (acquisition campaign of the person), counts_as_attendance (admitted AND verified AND external); measures scans, distinct_people. Dataset daily_marketing: fields campaign_id (campaign), day (YYYY-MM-DD), week (Monday of the week), platform (platform); measures spend, impressions, clicks, sessions, registration_starts, ctr_pct.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "dataset": {
+     "type": "string",
+     "enum": [
+      "people",
+      "scans",
+      "daily_marketing"
+     ]
+    },
+    "filters": {
+     "maxItems": 8,
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "field": {
+        "type": "string"
+       },
+       "op": {
+        "type": "string",
+        "enum": [
+         "eq",
+         "neq",
+         "in",
+         "gte",
+         "lte",
+         "contains"
+        ]
+       },
+       "values": {
+        "minItems": 1,
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      },
+      "required": [
+       "field",
+       "op",
+       "values"
+      ]
+     }
+    },
+    "groupBy": {
+     "maxItems": 2,
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "measures": {
+     "maxItems": 6,
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "limit": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 60
+    }
+   },
+   "required": [
+    "dataset"
+   ]
+  }
+ },
+ {
+  "name": "actionList",
+  "description": "Who to act on: confirmed people who asked no question, interested but not confirmed, waitlisted, and people who failed a gate scan and were never admitted. Gives counts, campaign split and a few examples. Leave cohort out for all group sizes.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "cohort": {
+     "type": "string",
+     "enum": [
+      "confirmed_not_engaged",
+      "interested_not_confirmed",
+      "waitlisted",
+      "gate_failed_not_admitted"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "whatIf",
+  "description": "Simulate budget moves between campaigns, a cut to the whole budget, and/or a different show-up rate among confirmed registrants. Returns a cautious-to-optimistic range with its assumptions. Before the event only the unspent budget can change, a percentage is of the budget, and the result is a change with no new total. Always use this for 'what if' questions instead of calculating yourself.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "moves": {
+     "maxItems": 10,
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "from": {
+        "type": "string"
+       },
+       "to": {
+        "type": "string"
+       },
+       "inr": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "inr"
+      ]
+     }
+    },
+    "budgetChangePct": {
+     "type": "number",
+     "minimum": -100,
+     "maximum": 100
+    },
+    "budgetChangeInr": {
+     "type": "number"
+    },
+    "cutStrategy": {
+     "type": "string",
+     "enum": [
+      "proportional",
+      "costliest_first"
+     ]
+    },
+    "confirmedShowUpPct": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "capacityAttendees": {
+     "type": "integer"
+    }
+   }
+  }
+ },
+ {
+  "name": "searchPeople",
+  "description": "Search people by name or person_id; returns matches with type, campaign, latest status, attended and engaged.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "q": {
+     "type": "string"
+    },
+    "page": {
+     "type": "integer",
+     "minimum": 1
+    }
+   },
+   "required": [
+    "q"
+   ]
+  }
+ },
+ {
+  "name": "person",
+  "description": "One person's profile, registrations, attendance and full timeline. Look up by person_id (names repeat).",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "personId": {
+     "type": "string"
+    },
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   },
+   "required": [
+    "personId"
+   ]
+  }
+ },
+ {
+  "name": "tasks",
+  "description": "Tasks with owner, team, due date, status and overdue flag; optional filters.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "status": {
+     "type": "string",
+     "enum": [
+      "todo",
+      "doing",
+      "blocked",
+      "done"
+     ]
+    },
+    "campaign_id": {
+     "type": "string"
+    },
+    "owner_id": {
+     "type": "string"
+    },
+    "overdueOnly": {
+     "type": "boolean"
+    }
+   }
+  }
+ },
+ {
+  "name": "dataHealth",
+  "description": "Data quality: duplicate IDs per table, conflicting duplicates, denied/pending/unverified scans, non-external admissions, negative spend rows, unattributed visitors.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
+  "name": "eventInfo",
+  "description": "Event dates, history window and every target version."
+ },
+ {
+  "name": "proposeTask",
+  "description": "Show the user a draft of ONE new task to review, edit and confirm. Nothing is saved until they confirm.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "title": {
+     "type": "string",
+     "description": "Short action, under 90 characters."
+    },
+    "description": {
+     "type": "string",
+     "description": "What to do and how success will be checked."
+    },
+    "campaignId": {
+     "type": "string",
+     "description": "Campaign id this is about, if any."
+    },
+    "ownerId": {
+     "type": "string",
+     "description": "owner_id from the team list, if clear."
+    },
+    "dueDate": {
+     "type": "string",
+     "description": "YYYY-MM-DD, after the selected date."
+    },
+    "priority": {
+     "type": "string",
+     "enum": [
+      "low",
+      "medium",
+      "high"
+     ]
+    },
+    "reason": {
+     "type": "string",
+     "description": "Why, in one or two sentences."
+    },
+    "evidence": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "The figures this rests on, copied from the summary or tool results."
+    }
+   },
+   "required": [
+    "title",
+    "description",
+    "reason",
+    "evidence"
+   ]
+  }
+ },
+ {
+  "name": "openInApp",
+  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "target": {
+     "type": "string",
+     "enum": [
+      "campaign",
+      "task",
+      "daily_marketing",
+      "targets",
+      "checkins",
+      "settings",
+      "person",
+      "actions",
+      "whatif"
+     ]
+    },
+    "id": {
+     "type": "string"
+    },
+    "label": {
+     "type": "string",
+     "description": "Button text, a few words."
+    }
+   },
+   "required": [
+    "target",
+    "label"
+   ]
+  }
+ }
+]

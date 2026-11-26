@@ -114,7 +114,7 @@ export const catalog = {
   },
   whatIf: {
     description:
-      "Simulate budget moves between campaigns, a cut to the whole budget, and/or a different show-up rate among confirmed registrants. Returns a cautious-to-optimistic range with its assumptions. Always use this for 'what if' questions instead of calculating yourself.",
+      "Simulate budget moves between campaigns, a cut to the whole budget, and/or a different show-up rate among confirmed registrants. Returns a cautious-to-optimistic range with its assumptions. Before the event only the unspent budget can change, a percentage is of the budget, and the result is a change with no new total. Always use this for 'what if' questions instead of calculating yourself.",
     input: z.object({
       asOf,
       moves: z.array(z.object({ from: z.string().optional(), to: z.string().optional(), inr: z.number() })).max(10).optional(),

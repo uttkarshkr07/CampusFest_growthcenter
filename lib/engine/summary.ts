@@ -55,6 +55,7 @@ export function buildSummary(data: Dataset, asOf: string) {
     flags: fl.value.flags.map((x) => ({ id: x.campaign_id, level: x.level, reason: x.reason })),
     projection: proj ? { confirmedNow: proj.value.confirmedNow, low: proj.value.low, mid: proj.value.mid, high: proj.value.high, goal: proj.value.goal, assumptions: proj.value.assumptions } : null,
     tasks: { byStatus: tasks.byStatus, overdue: tasks.overdue },
+    team: view.team.map((m) => ({ owner_id: m.owner_id, name: m.owner_name, team: m.team })),
     dataAvailable: availability(view),
     definitions: [DEF.attendee, DEF.registered, DEF.attribution, DEF.spend, DEF.showup],
     caveats,

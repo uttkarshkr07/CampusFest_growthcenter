@@ -97,10 +97,27 @@ describe("whatIf", () => {
     expect(E.whatIf(d, { asOf: POST, moves: [{ from: "C07", inr: 999999 }] }).value).toBeNull();
     expect(E.whatIf(d, { asOf: POST, moves: [{ to: "C99", inr: 100 }] }).value).toBeNull();
   });
-  it("warns before the event that channel attendance is unknown", () => {
+  it("warns before the event that channel attendance is unknown, and gives a change only", () => {
     const r = E.whatIf(d, { asOf: MAR15, moves: [{ from: "C02", to: "C04", inr: 10000 }] });
     expect(r.value!.baseline.kind).toMatch(/projected/);
+    expect(r.value!.low.attendees).toBeNull();
     expect(r.caveats.join(" ")).toMatch(/not known at this date/);
+  });
+  it("before the event cuts the budget, not money already spent", () => {
+    const v = E.whatIf(d, { asOf: MAR15, budgetChangePct: -20 }).value!;
+    expect(v.budget).toEqual({ inForce: 300000, spentSoFar: 189575, unspent: 110425 });
+    expect(v.netBudgetChangeInr).toBe(-60000);
+    expect(v.high.attendeeChange).toBeLessThan(0);
+  });
+  it("never cuts or moves more than is unspent before the event", () => {
+    const r = E.whatIf(d, { asOf: MAR15, budgetChangePct: -50 });
+    expect(r.value!.netBudgetChangeInr).toBe(-110425);
+    expect(r.caveats.join(" ")).toMatch(/cannot be taken back/);
+    expect(E.whatIf(d, { asOf: MAR15, moves: [{ from: "C02", to: "C04", inr: 150000 }] }).value).toBeNull();
+  });
+  it("still gives a total for a show-up change alone before the event", () => {
+    const v = E.whatIf(d, { asOf: MAR15, confirmedShowUpPct: 85 }).value!;
+    expect(v.low.attendees).toBe(v.baseline.attendees + v.low.attendeeChange);
   });
 });
 

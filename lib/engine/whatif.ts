@@ -1,5 +1,7 @@
 // Budget and show-up scenarios. Every figure that comes out of here rests on labelled assumptions.
-import { baseCaveats, campaignTable, DEF, externalStatusCounts, projection, snapshot } from "./metrics";
+// After the event it replays the campaign with a different allocation. Before the event, money already
+// spent cannot move: only the unspent budget can change, and the result is a CHANGE, not a new total.
+import { baseCaveats, campaignTable, DEF, externalStatusCounts, projection, snapshot, targetsVsActuals } from "./metrics";
 import type { Dataset, Result } from "./types";
 
 export interface Move {
@@ -40,11 +42,23 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
     if (unknown) return cannot(`No campaign '${unknown}' exists at this date. Campaigns: ${[...rows.keys()].join(", ")}.`);
   }
 
+  const tva = targetsVsActuals(data, spec.asOf).value;
+  const budget = tva.rows.find((r) => r.key === "spend")?.goal ?? null;
+  const unspent = budget != null ? Math.max(0, budget - table.totals.spend) : null;
+
   // A whole-budget change is turned into per-campaign moves so one set of rules applies.
-  const change = spec.budgetChangeInr ?? (spec.budgetChangePct != null ? (table.totals.spend * spec.budgetChangePct) / 100 : 0);
+  // Percentages are of total spend after the event, and of the budget in force before it.
+  const pctBase = post ? table.totals.spend : budget;
+  if (spec.budgetChangePct != null && spec.budgetChangeInr == null && pctBase == null) return cannot("No budget is in force at this date, so a percentage cannot be applied. Give the amount in INR.");
+  const change = spec.budgetChangeInr ?? (spec.budgetChangePct != null ? (pctBase! * spec.budgetChangePct) / 100 : 0);
   if (change > 0) return cannot("An increase needs a destination: add moves with only 'to' campaigns. The data cannot say where extra money would work best.");
   if (change < 0) {
-    const cut = Math.min(-change, table.totals.spend);
+    let cut = Math.min(-change, table.totals.spend);
+    if (!post && unspent != null) {
+      if (-change > unspent) caveats.push(`Only ${inrText(unspent)} of the ${inrText(budget!)} budget is unspent. Money already spent cannot be taken back, so the cut is limited to that.`);
+      cut = Math.min(-change, unspent);
+      if (cut <= 0) return cannot("The whole budget is already spent at this date, so there is nothing left to cut.");
+    }
     const strategy = spec.cutStrategy ?? "proportional";
     const unitOf = (id: string) => (post ? rows.get(id)!.inrPerAttendee : rows.get(id)!.inrPerConfirmed) ?? Number.POSITIVE_INFINITY;
     if (strategy === "proportional") {
@@ -55,12 +69,12 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
       let left = cut;
       for (const r of [...rows.values()].filter((x) => x.spend > 0).sort((a, b) => unitOf(b.campaign_id) - unitOf(a.campaign_id))) {
         if (left <= 0) break;
-        const take = Math.min(left, r.spend);
+        const take = post ? Math.min(left, r.spend) : left;
         moves.push({ from: r.campaign_id, inr: take });
         left -= take;
       }
     }
-    assumptions.push(`The ${inrText(cut)} cut is applied ${strategy === "proportional" ? "in proportion to each campaign's spend" : "to the costliest campaigns first"}.`);
+    assumptions.push(`The ${inrText(cut)} cut is applied ${strategy === "proportional" ? "in proportion to each campaign's spend so far" : "to the costliest campaigns first"}${post ? "" : ", and comes out of future spend"}.`);
   }
   if (!moves.length && spec.confirmedShowUpPct == null) return cannot("Nothing to simulate: give budget moves, a budget cut, or a show-up rate.");
 
@@ -70,8 +84,16 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
     if (m.from) out.set(m.from, (out.get(m.from) ?? 0) + m.inr);
     if (m.to) into.set(m.to, (into.get(m.to) ?? 0) + m.inr);
   }
-  for (const [id, amount] of out)
-    if (amount > rows.get(id)!.spend + 0.5) return cannot(`${id} has only ${inrText(rows.get(id)!.spend)} of spend at this date, so ${inrText(amount)} cannot be taken out.`);
+  if (post) {
+    for (const [id, amount] of out)
+      if (amount > rows.get(id)!.spend + 0.5) return cannot(`${id} has only ${inrText(rows.get(id)!.spend)} of spend at this date, so ${inrText(amount)} cannot be taken out.`);
+  } else if (unspent != null) {
+    const moved = [...out.values()].reduce((a, b) => a + b, 0);
+    const newMoney = Math.max(0, [...into.values()].reduce((a, b) => a + b, 0) - moved);
+    if (moved > unspent + 0.5) return cannot(`Only ${inrText(unspent)} of the budget is unspent at this date. Money already spent cannot be moved or cut.`);
+    if (moved + newMoney > unspent + 0.5) caveats.push(`This needs more than the ${inrText(unspent)} still unspent, so it goes over the ${inrText(budget!)} budget.`);
+  }
+  if (!post && moves.length) assumptions.push(`ASSUMPTION: this changes how the unspent budget (${unspent != null ? inrText(unspent) : "unknown amount"}) will be spent. The data holds no per-campaign plan for it.`);
 
   const unitLabel = post ? "actual attendee" : "confirmed registrant";
   const lines: { campaign_id: string; campaign_name: string; direction: "cut" | "add"; inr: number; averageUnitCost: number; effectCautious: number; effectOptimistic: number }[] = [];
@@ -83,7 +105,7 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
       return;
     }
     const unit = r.spend / base;
-    const effect = (penalty: number) => (direction === "cut" ? -Math.min(base, amount / unit) : amount / (unit * penalty));
+    const effect = (penalty: number) => (direction === "cut" ? -(post ? Math.min(base, amount / unit) : amount / unit) : amount / (unit * penalty));
     if (direction === "add" && amount > r.spend) caveats.push(`${id}: adding ${inrText(amount)} more than doubles its spend, far outside anything observed.`);
     lines.push({ campaign_id: id, campaign_name: r.campaign_name, direction, inr: r0(amount), averageUnitCost: r0(unit), effectCautious: effect(st.whatif_penalty_base), effectOptimistic: effect(st.whatif_penalty_stretch) });
   };
@@ -124,13 +146,17 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
     if (lines.length) caveats.push("The show-up change and the budget change are simply added; any interaction between them is ignored.");
   }
 
-  const result = (delta: number) => ({ attendeeChange: r0(delta), attendees: r0(baseline + delta) });
+  // Before the event the projection counts only today's confirmed people, so a change to future
+  // spend cannot be added to it. A show-up change alone does apply to today's confirmed people.
+  const totalIsMeaningful = post || !lines.length;
+  const result = (delta: number) => ({ attendeeChange: r0(delta), attendees: totalIsMeaningful ? r0(baseline + delta) : null });
   const lo = result(Math.min(cautious, optimistic));
   const hi = result(Math.max(cautious, optimistic));
   if (spec.capacityAttendees != null) {
     assumptions.push(`ASSUMPTION: capacity of ${spec.capacityAttendees} distinct attendees, as given in the question.`);
-    if (hi.attendees > spec.capacityAttendees) caveats.push(`The upper result (${hi.attendees}) is above the stated capacity of ${spec.capacityAttendees}.`);
+    if (hi.attendees != null && hi.attendees > spec.capacityAttendees) caveats.push(`The upper result (${hi.attendees}) is above the stated capacity of ${spec.capacityAttendees}.`);
   } else caveats.push("Venue capacity is not in the data, so these results are not capacity-checked.");
+  if (!totalIsMeaningful) caveats.push("The result is a change compared with spending the unspent budget the way it has been spent so far. No new total is given: today's projection leaves out registrations that future spend would bring.");
   if (lo.attendeeChange < 0 && hi.attendeeChange > 0) caveats.push("The range spans both a loss and a gain: the data cannot say whether this change helps.");
   caveats.push("This is arithmetic on observed averages, not evidence that the change would cause these results.");
 
@@ -140,6 +166,7 @@ export function whatIf(data: Dataset, spec: WhatIfSpec) {
       asOf: s.label,
       phase: s.phase,
       baseline: { attendees: baseline, kind: post ? "actual" : "projected (mid case)", spend: table.totals.spend },
+      budget: { inForce: budget, spentSoFar: table.totals.spend, unspent },
       netBudgetChangeInr: r0(netBudget),
       lines: lines.map((l) => ({ ...l, effectCautious: r0(l.effectCautious), effectOptimistic: r0(l.effectOptimistic), effectUnit: unitLabel })),
       showUp,

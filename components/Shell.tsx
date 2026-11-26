@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Bot, Database, LayoutDashboard, ListChecks, RotateCcw, Settings, Users } from "lucide-react";
+import { BarChart3, Calculator, Database, LayoutDashboard, ListChecks, RotateCcw, Settings, Target, Users } from "lucide-react";
+import CopilotPanel from "./copilot/CopilotPanel";
 import { STORY, useStore } from "@/lib/store";
 import { Button, Modal, Spinner } from "./ui";
 import { fmtDate } from "@/lib/format";
@@ -11,6 +12,8 @@ import { fmtDate } from "@/lib/format";
 const NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/campaigns", label: "Campaigns", icon: BarChart3 },
+  { href: "/actions", label: "Actions", icon: Target },
+  { href: "/whatif", label: "What-if", icon: Calculator },
   { href: "/people", label: "People", icon: Users },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/data", label: "Data", icon: Database },
@@ -54,15 +57,23 @@ export default function Shell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-          <div className="flex cursor-not-allowed items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] text-slate-400" title="The AI copilot is the next build step">
-            <Bot className="h-4 w-4" /> Copilot (next)
-          </div>
         </nav>
         <div className="border-t border-line p-3 text-[11px] leading-snug text-muted">Challenge A: maximise people who actually attend. Data: fictional CampusFest 2025.</div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b border-line bg-white/95 px-5 py-2.5 backdrop-blur">
+          <Button variant="ghost" onClick={() => setConfirmReset(true)} title="Restore the original dataset">
+            <RotateCcw className="h-3.5 w-3.5" /> Reset demo data
+          </Button>
+          {saving && <span className="text-[12px] text-muted">Saving...</span>}
+          <div className="ml-auto flex gap-1">
+            {quick.map((q) => (
+              <button key={q.label} title={q.hint} onClick={() => setAsOf(q.day)} className={`rounded-md px-2 py-1 text-[12px] ${asOf === q.day ? "bg-brand text-white" : "border border-line hover:bg-slate-50"}`}>
+                {q.label}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-medium text-muted">As of</span>
             <input
@@ -74,20 +85,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               className="rounded-md border border-line px-2 py-1 text-[13px]"
               aria-label="As-of date"
             />
-            <span className="hidden text-[12px] text-muted md:inline">end of {fmtDate(asOf)} IST</span>
-          </div>
-          <div className="flex gap-1">
-            {quick.map((q) => (
-              <button key={q.label} title={q.hint} onClick={() => setAsOf(q.day)} className={`rounded-md px-2 py-1 text-[12px] ${asOf === q.day ? "bg-brand text-white" : "border border-line hover:bg-slate-50"}`}>
-                {q.label}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            {saving && <span className="text-[12px] text-muted">Saving...</span>}
-            <Button variant="ghost" onClick={() => setConfirmReset(true)} title="Restore the original dataset">
-              <RotateCcw className="h-3.5 w-3.5" /> Reset demo data
-            </Button>
+            <span className="hidden text-[12px] text-muted xl:inline">end of {fmtDate(asOf)} IST</span>
           </div>
         </header>
 
@@ -108,6 +106,8 @@ export default function Shell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
+      <CopilotPanel />
+
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset demo data?">
         <p className="text-[13px] text-slate-700">
           This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. It cannot be undone.
@@ -126,7 +126,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
       </Modal>
 
-      {toast && <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-md bg-ink px-4 py-2.5 text-[13px] text-white shadow-lg">{toast}</div>}
+      {toast && <div className="fixed bottom-20 left-56 z-50 max-w-sm rounded-md bg-ink px-4 py-2.5 text-[13px] text-white shadow-lg">{toast}</div>}
     </div>
   );
 }

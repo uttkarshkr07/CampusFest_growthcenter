@@ -23,7 +23,7 @@ export function blankTask(asOf: string, patch: Partial<TaskDraft> = {}): TaskDra
   };
 }
 
-export default function TaskDialog({ open, onClose, initial }: { open: boolean; onClose: () => void; initial: TaskDraft | null }) {
+export default function TaskDialog({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial: TaskDraft | null; onSaved?: (task: TaskRow | null) => void }) {
   const { data, createTask, updateTask } = useStore();
   const [t, setT] = useState<TaskDraft | null>(initial);
   useEffect(() => setT(initial), [initial]);
@@ -47,7 +47,10 @@ export default function TaskDialog({ open, onClose, initial }: { open: boolean; 
       origin_ref: t.origin_ref,
     };
     const ok = id ? await updateTask(id, rest) : await createTask(rest);
-    if (ok) onClose();
+    if (ok) {
+      onSaved?.(typeof ok === "object" ? ok : null);
+      onClose();
+    }
   }
 
   return (
@@ -106,6 +109,13 @@ export default function TaskDialog({ open, onClose, initial }: { open: boolean; 
           <div className="rounded-md bg-slate-50 p-3 text-[12px] text-slate-700">
             <div className="mb-1 font-semibold">Why this task exists (snapshot at creation)</div>
             {typeof ref.reason === "string" && <div>{ref.reason}</div>}
+            {Array.isArray(ref.evidence) && ref.evidence.length > 0 && (
+              <ul className="mt-1 list-disc pl-4">
+                {(ref.evidence as string[]).map((e) => (
+                  <li key={e}>{e}</li>
+                ))}
+              </ul>
+            )}
             <div className="mt-1 text-muted">
               Rule: {String(ref.rule ?? "n/a")} · As of {String(ref.asOf ?? "n/a")}
             </div>
