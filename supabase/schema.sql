@@ -123,11 +123,11 @@ create table public.change_log (
 create or replace function public._seed_app_defaults() returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  delete from public.tasks;
-  delete from public.change_log;
-  delete from public.settings;
-  delete from public.campaign_plan;
-  delete from public.team;
+  delete from public.tasks where true;
+  delete from public.change_log where true;
+  delete from public.settings where true;
+  delete from public.campaign_plan where true;
+  delete from public.team where true;
   -- ASSUMPTION: team per owner (the source has owners, not teams). T03 to T06 own attendee
   -- campaigns; T01/T02 come from the Sponsor dataset's shared team dictionary.
   insert into public.team (owner_id, owner_name, team) values
