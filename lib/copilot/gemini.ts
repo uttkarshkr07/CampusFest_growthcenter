@@ -61,6 +61,8 @@ export function classifyError(status: number, payload: unknown): ProxyError {
     if (/per\s?day|PerDay/i.test(text)) return { kind: "quota_day", message: "Today's free requests for this model are used up. Google resets them at midnight Pacific time.", retryAfterSec };
     return { kind: "rate", message: "The free model's per-minute limit was reached. Wait a moment and ask again.", retryAfterSec };
   }
+  // a billing problem stops every model on the key, so it must not be retried on the backup model
+  if (status === 402) return { kind: "no_key", message: "The model account has a billing problem, so the AI is switched off. The site owner needs to check it.", retryAfterSec };
   if (status === 404) return { kind: "unavailable", message: "The configured model is not available for this key.", retryAfterSec };
   if (status === 503 || status === 500) return { kind: "unavailable", message: "The model is busy or unavailable right now.", retryAfterSec };
   if (status === 401 || status === 403) return { kind: "no_key", message: "The model key was rejected. The site owner needs to check it.", retryAfterSec };

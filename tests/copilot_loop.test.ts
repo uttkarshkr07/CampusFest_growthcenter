@@ -192,5 +192,6 @@ describe("proxy helpers", () => {
     const minute = classifyError(429, quota("GenerateRequestsPerMinutePerProjectPerModel-FreeTier"));
     expect([minute.kind, minute.retryAfterSec]).toEqual(["rate", 21]);
     expect(classifyError(404, null).kind).toBe("unavailable");
+    expect(classifyError(402, null).kind).toBe("no_key");
   });
 });
