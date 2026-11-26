@@ -9,8 +9,8 @@
     "test": "vitest run",
     "seed": "python -I scripts/xlsx_to_json.py",
     "import": "node scripts/import.mjs",
-    "deploy": "opennextjs-cloudflare build && wrangler deploy",
-    "preview": "opennextjs-cloudflare build && wrangler dev"
+    "deploy": "node scripts/patch-opennext.mjs && opennextjs-cloudflare build && node scripts/check-chunks.mjs && node scripts/strip-env.mjs && wrangler deploy",
+    "preview": "node scripts/patch-opennext.mjs && opennextjs-cloudflare build && node scripts/check-chunks.mjs && node scripts/strip-env.mjs && wrangler dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
