@@ -11,6 +11,8 @@ export interface EngineSettings {
   scale_min_showup: number;
   stop_max_showup: number;
   min_sample: number;
+  whatif_penalty_base: number;
+  whatif_penalty_stretch: number;
 }
 
 export const DEFAULT_SETTINGS: EngineSettings = {
@@ -23,6 +25,8 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   scale_min_showup: 0.75,
   stop_max_showup: 0.55,
   min_sample: 30,
+  whatif_penalty_base: 2,
+  whatif_penalty_stretch: 1.5,
 };
 
 export const SETTING_HELP: Record<keyof EngineSettings, { label: string; help: string; kind: "pct" | "num" | "ratio" }> = {
@@ -35,6 +39,8 @@ export const SETTING_HELP: Record<keyof EngineSettings, { label: string; help: s
   scale_min_showup: { label: "Minimum show-up to scale", help: "After the event, a campaign needs at least this show-up (attended / registered) to be flagged SCALE.", kind: "pct" },
   stop_max_showup: { label: "Stop if show-up below", help: "After the event, show-up below this flags STOP regardless of cost.", kind: "pct" },
   min_sample: { label: "Minimum sample", help: "Campaigns with fewer registrations (or confirmed) than this are flagged WATCH: too little data to judge.", kind: "num" },
+  whatif_penalty_base: { label: "What-if: cost of an extra attendee, cautious", help: "ASSUMPTION. Extra budget buys attendees at this multiple of the channel's current average cost, because channels saturate.", kind: "ratio" },
+  whatif_penalty_stretch: { label: "What-if: cost of an extra attendee, optimistic", help: "ASSUMPTION. The optimistic version of the multiple above.", kind: "ratio" },
 };
 
 export function resolveSettings(rows: SettingRow[]): EngineSettings {

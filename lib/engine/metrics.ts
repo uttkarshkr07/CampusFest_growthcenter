@@ -28,7 +28,7 @@ export type Phase = "pre-event" | "live" | "post-event";
 // ---------------------------------------------------------------------------
 // Snapshot: the per-as-of core sets, memoised per prepared dataset
 // ---------------------------------------------------------------------------
-interface Snapshot {
+export interface Snapshot {
   p: Prepared;
   asOfMs: number;
   day: string;
@@ -50,7 +50,7 @@ interface Snapshot {
 
 const snapCache = new WeakMap<Prepared, Map<number, Snapshot>>();
 
-function snapshot(data: Dataset, asOf: string): Snapshot {
+export function snapshot(data: Dataset, asOf: string): Snapshot {
   const p = prepare(data);
   const { ms: asOfMs, day, label } = resolveAsOf(asOf);
   let m = snapCache.get(p);
@@ -114,13 +114,13 @@ function snapshot(data: Dataset, asOf: string): Snapshot {
   return snap;
 }
 
-function baseCaveats(s: Snapshot): string[] {
+export function baseCaveats(s: Snapshot): string[] {
   const c = [...s.p.warnings];
   if (s.phase === "live") c.push("The event is in progress at this as-of time: attendance is partial.");
   return c;
 }
 
-function spendAsOf(s: Snapshot, campaignId?: string): number {
+export function spendAsOf(s: Snapshot, campaignId?: string): number {
   let t = 0;
   for (const d of s.p.daily) {
     if (d.ms > s.asOfMs) continue;
@@ -137,7 +137,7 @@ function targetInForce(p: Prepared, ms: number) {
 }
 
 /** Status counts for external registrations (one per person) at the status snapshot time. */
-function externalStatusCounts(s: Snapshot, atMs = s.statusMs) {
+export function externalStatusCounts(s: Snapshot, atMs = s.statusMs) {
   const counts: Record<string, number> = { interested: 0, confirmed: 0, cancelled: 0, waitlisted: 0, no_status: 0 };
   const confirmed = new Set<string>();
   for (const [pid, reg] of s.personReg) {
@@ -368,7 +368,7 @@ export function campaignTable(data: Dataset, asOf: string) {
         registeredWithoutCampaign: regAttendeesNoCampaign,
       },
     },
-    basis: [DEF.asOf, DEF.dedup, DEF.attribution, DEF.spend, DEF.attendee, DEF.showup, "Engaged share = registrants who submitted an event question (the strongest pre-event show-up signal in the 2025 data)."],
+    basis: [DEF.asOf, DEF.dedup, DEF.attribution, DEF.spend, DEF.attendee, DEF.showup, "Engaged share = share of registrants who submitted an event question."],
     caveats,
   } satisfies Result<unknown>;
 }
@@ -550,12 +550,12 @@ export function flags(data: Dataset, asOf: string) {
   caveats.push("Flags use straight thresholds from Settings and do not model channel saturation: a SCALE flag means 'test more budget', not 'move all budget'.");
   if (!post)
     caveats.push(
-      "Before the event, cost per confirmed registrant is a PROXY for cost per actual attendee: it ignores channel differences in show-up. Engaged share is context only, because question submissions are recorded for only some campaigns.",
+      "Before the event, cost per confirmed registrant is a PROXY for cost per actual attendee: it ignores channel differences in show-up. Engaged share is context only.",
     );
   if (s.phase === "live") caveats.push("Event in progress: pre-event proxy rules are used until the event ends.");
   return {
     value: { asOf: s.label, phase: s.phase, flags: out, thresholds: st },
-    basis: [DEF.asOf, DEF.attribution, DEF.spend, post ? DEF.showup : "Engaged = submitted an event question; 2025 data shows question askers attended at a higher rate than non-engaged registrants."],
+    basis: [DEF.asOf, DEF.attribution, DEF.spend, post ? DEF.showup : "Engaged = submitted an event question. Context only: it does not change the pre-event flag."],
     caveats,
   } satisfies Result<unknown>;
 }
