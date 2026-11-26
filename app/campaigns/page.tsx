@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ArrowDownUp, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { campaignTable, flags, toIstIso, type CampaignMetrics } from "@/lib/engine";
 import { Badge, Button, Card, Caveats, Field, FlagChip, Modal, PageHeader, Tip, inputCls } from "@/components/ui";
 import TaskDialog, { type TaskDraft } from "@/components/TaskDialog";
@@ -27,6 +29,7 @@ const COLS: { key: SortKey; label: string; help: string; fmt: (r: CampaignMetric
 
 export default function CampaignsPage() {
   const { data, asOf, upsertPlan } = useStore();
+  const mayEdit = canEdit(useAuth((s) => s.me), "campaigns");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "inrPerAttendee", dir: 1 });
   const [draft, setDraft] = useState<TaskDraft | null>(null);
   const [adding, setAdding] = useState(false);
@@ -58,9 +61,9 @@ export default function CampaignsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Campaigns"
-        subtitle={`Ranked by cost per ${res.f.value.phase === "post-event" ? "actual attendee" : "confirmed registrant (pre-event proxy)"}. Status and budget are app data; everything else is computed from the source records.`}
+        subtitle={`Ranked by cost per ${res.f.value.phase === "post-event" ? "actual attendee" : "confirmed registrant (pre-event proxy)"}. Status and budget are app data; everything else is computed from the source records.${mayEdit ? "" : ` View only for you. ${whoCanEdit("campaigns")}`}`}
         right={
-          <Button variant="primary" onClick={() => setAdding(true)}>
+          <Button variant="primary" onClick={() => setAdding(true)} disabled={!mayEdit} title={mayEdit ? undefined : whoCanEdit("campaigns")}>
             <Plus className="h-4 w-4" /> Add campaign
           </Button>
         }
@@ -108,7 +111,7 @@ export default function CampaignsPage() {
                       </div>
                     </td>
                     <td className="px-2 py-2">
-                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={r.app_status} onChange={(e) => upsertPlan(r.campaign_id, { app_status: e.target.value as "active" })}>
+                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={r.app_status} disabled={!mayEdit} onChange={(e) => upsertPlan(r.campaign_id, { app_status: e.target.value as "active" })}>
                         <option value="planned">planned</option>
                         <option value="active">active</option>
                         <option value="paused">paused</option>
@@ -116,7 +119,7 @@ export default function CampaignsPage() {
                       </select>
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <BudgetCell key={`${r.campaign_id}-${r.budget_inr}`} value={r.budget_inr} used={r.budgetUsedPct} onSave={(v) => upsertPlan(r.campaign_id, { budget_inr: v })} />
+                      <BudgetCell key={`${r.campaign_id}-${r.budget_inr}`} value={r.budget_inr} used={r.budgetUsedPct} locked={!mayEdit} onSave={(v) => upsertPlan(r.campaign_id, { budget_inr: v })} />
                     </td>
                     {COLS.map((c) => (
                       <td key={c.key} className={`tabular whitespace-nowrap px-2 py-2 text-right ${c.key === "inrPerAttendee" ? "font-semibold" : ""}`}>
@@ -173,7 +176,7 @@ export default function CampaignsPage() {
   );
 }
 
-function BudgetCell({ value, used, onSave }: { value: number | null; used: number | null; onSave: (v: number | null) => void }) {
+function BudgetCell({ value, used, locked, onSave }: { value: number | null; used: number | null; locked: boolean; onSave: (v: number | null) => void }) {
   const [edit, setEdit] = useState(false);
   const [v, setV] = useState(value == null ? "" : String(value));
   if (edit)
@@ -192,8 +195,8 @@ function BudgetCell({ value, used, onSave }: { value: number | null; used: numbe
       />
     );
   return (
-    <button className="tabular rounded px-1 text-right hover:bg-slate-100" onClick={() => setEdit(true)} title="Click to edit">
-      {value == null ? <span className="text-muted">set</span> : inr(value)}
+    <button className="tabular rounded px-1 text-right hover:bg-slate-100" onClick={() => setEdit(true)} disabled={locked} title={locked ? whoCanEdit("campaign_plan") : "Click to edit"}>
+      {value == null ? <span className="text-muted">{locked ? "none" : "set"}</span> : inr(value)}
       {used != null && <div className={`text-[11px] ${used > 100 ? "text-bad" : "text-muted"}`}>{pct(used, 0)} used</div>}
     </button>
   );

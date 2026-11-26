@@ -18,6 +18,8 @@ interface State {
   toast: string | null;
   setAsOf: (d: string) => void;
   load: () => Promise<void>;
+  /** forget the loaded data, for example after signing out */
+  clear: () => void;
   notify: (msg: string | null) => void;
   updateSourceRow: (table: SourceTable, rowId: number, patch: Record<string, unknown>, rowRef: string) => Promise<boolean>;
   insertSourceRow: (table: SourceTable, row: Record<string, unknown>, rowRef: string) => Promise<boolean>;
@@ -32,6 +34,9 @@ interface State {
 }
 
 const EMPTY_APP = { campaign_plan: [], team: [], tasks: [], settings: [], change_log: [] };
+
+// a blocked change comes back either as a policy error or as "no row changed"
+const BLOCKED = /row-level security|multiple \(or no\) rows|coerce the result to a single/i;
 
 export const useStore = create<State>((set, get) => {
   /** Write to change_log in the DB and locally. Never blocks the main write. */
@@ -49,7 +54,8 @@ export const useStore = create<State>((set, get) => {
       if (okMsg) set({ toast: okMsg });
       return r;
     } catch (e) {
-      set({ toast: `Save failed: ${e instanceof Error ? e.message : String(e)}` });
+      const message = e instanceof Error ? e.message : String(e);
+      set({ toast: BLOCKED.test(message) ? "Not saved: your account is not allowed to make this change." : `Save failed: ${message}` });
       return null;
     } finally {
       set({ saving: false });
@@ -67,6 +73,7 @@ export const useStore = create<State>((set, get) => {
     toast: null,
     setAsOf: (d) => set({ asOf: d }),
     notify: (msg) => set({ toast: msg }),
+    clear: () => set({ data: null, status: "idle", error: null }),
 
     load: async () => {
       const db = getSupabase();
@@ -164,8 +171,10 @@ export const useStore = create<State>((set, get) => {
     deleteTask: async (id) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
-        const { error } = await db.from("tasks").delete().eq("id", id);
+        const { data: removed, error } = await db.from("tasks").delete().eq("id", id).select("id");
         if (error) throw new Error(error.message);
+        // a delete that is not allowed removes nothing and reports no error
+        if (!removed?.length) throw new Error("row-level security");
         const before = get().data!.tasks.find((x) => x.id === id);
         replaceData({ tasks: get().data!.tasks.filter((x) => x.id !== id) });
         await log([{ table_name: "tasks", row_ref: id, field: "(deleted)", old_value: before?.title ?? null, new_value: null }]);

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEditTask, taskBlockReason } from "@/lib/auth/permissions";
 import type { TaskRow } from "@/lib/engine";
 import { addDays } from "@/lib/engine";
 import { Button, Field, Modal, inputCls } from "./ui";
@@ -26,10 +28,14 @@ export function blankTask(asOf: string, patch: Partial<TaskDraft> = {}): TaskDra
 export default function TaskDialog({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial: TaskDraft | null; onSaved?: (task: TaskRow | null) => void }) {
   const { data, createTask, updateTask } = useStore();
   const [t, setT] = useState<TaskDraft | null>(initial);
+  const me = useAuth((s) => s.me);
   useEffect(() => setT(initial), [initial]);
   if (!open || !t || !data) return null;
   const set = (patch: Partial<TaskDraft>) => setT({ ...t, ...patch });
   const ref = t.origin_ref as Record<string, unknown> | null;
+  // an existing task needs permission for its current owner as well as the new one
+  const deniedOwner = [initial?.id ? initial.owner_id : null, t.owner_id].find((id) => !canEditTask(me, id, data.team));
+  const blocked = deniedOwner ? taskBlockReason(deniedOwner, data.team) : null;
 
   async function save() {
     if (!t || !t.title.trim()) return;
@@ -67,8 +73,8 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
             <select className={inputCls} value={t.owner_id ?? ""} onChange={(e) => set({ owner_id: e.target.value || null })}>
               <option value="">Unassigned</option>
               {data.team.map((m) => (
-                <option key={m.owner_id} value={m.owner_id}>
-                  {m.owner_name} ({m.team})
+                <option key={m.owner_id} value={m.owner_id} disabled={!canEditTask(me, m.owner_id, data.team)}>
+                  {m.owner_name} ({m.team}){canEditTask(me, m.owner_id, data.team) ? "" : ", not your team"}
                 </option>
               ))}
             </select>
@@ -121,9 +127,10 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
             </div>
           </div>
         )}
+        {blocked && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">{blocked}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save} disabled={!t.title.trim()}>
+          <Button variant="primary" onClick={save} disabled={!t.title.trim() || !!blocked}>
             {t.id ? "Save task" : "Create task"}
           </Button>
         </div>

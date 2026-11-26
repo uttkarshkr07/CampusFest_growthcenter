@@ -1,5 +1,6 @@
 // Thin proxy to Gemini. The key stays on the server; the rules and tool list are fixed here.
 // Waiting for the model is network time, which does not count against the Worker CPU limit.
+import { isOrganiser } from "@/lib/auth/verify";
 import { classifyError, configuredModels, geminiRequest, parseBody } from "@/lib/copilot/gemini";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export async function POST(req: Request) {
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) return fail(503, "no_key", "The AI model is not set up on this deployment yet.");
+
+  // with sign-in on, only a signed-in organiser can spend the model quota
+  if (process.env.NEXT_PUBLIC_AUTH_MODE === "on" && !(await isOrganiser(req.headers.get("authorization")))) return fail(401, "auth", "Please sign in again to use the copilot.");
 
   const body = parseBody(await req.text());
   if (typeof body === "string") return fail(400, "bad_request", body);

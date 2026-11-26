@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { Badge, Button, Card, Empty, Field, PageHeader, inputCls } from "@/components/ui";
 import EditableTable, { type ColSpec } from "@/components/EditableTable";
 import { fmtDate, fmtDateTime, inr, num } from "@/lib/format";
@@ -117,6 +119,7 @@ export default function DataPage() {
 
 function TargetsEditor() {
   const { data, addTargetVersion, asOf } = useStore();
+  const mayEdit = canEdit(useAuth((s) => s.me), "targets");
   const sorted = useMemo(() => [...(data?.targets ?? [])].sort((a, b) => Date.parse(a.effective_at) - Date.parse(b.effective_at)), [data]);
   const last = sorted[sorted.length - 1];
   const [f, setF] = useState({
@@ -158,7 +161,8 @@ function TargetsEditor() {
           ))}
         </tbody>
       </table>
-      <div className="rounded-md border border-line p-3">
+      {!mayEdit && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">View only for you. {whoCanEdit("targets")}</p>}
+      <div className={mayEdit ? "rounded-md border border-line p-3" : "hidden"}>
         <div className="mb-2 text-[13px] font-semibold">Add a new target version</div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <Field label="Version name">

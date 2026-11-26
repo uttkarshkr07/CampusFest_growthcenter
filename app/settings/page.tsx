@@ -2,21 +2,25 @@
 
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { DEFAULT_SETTINGS, SETTING_HELP, resolveSettings, type EngineSettings } from "@/lib/engine";
 import { Badge, Button, Card, PageHeader } from "@/components/ui";
 
 export default function SettingsPage() {
   const { data, setSetting } = useStore();
+  const mayEdit = canEdit(useAuth((s) => s.me), "settings");
   if (!data) return null;
   const s = resolveSettings(data.settings);
   const keys = Object.keys(SETTING_HELP) as (keyof EngineSettings)[];
   return (
     <div className="space-y-4">
       <PageHeader title="Settings" subtitle="Assumptions and decision thresholds. Every value here is an ASSUMPTION, not sourced data. Changing one instantly recalculates projections and flags." />
+      {!mayEdit && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">View only for you. {whoCanEdit("settings")}</p>}
       <Card title="Assumptions and thresholds" right={<Badge kind="assumption" />}>
         <div className="divide-y divide-line">
           {keys.map((k) => (
-            <SettingRow key={`${k}-${s[k]}`} k={k} value={s[k]} onSave={(v) => setSetting(k, v)} />
+            <SettingRow key={`${k}-${s[k]}`} k={k} value={s[k]} locked={!mayEdit} onSave={(v) => setSetting(k, v)} />
           ))}
         </div>
       </Card>
@@ -34,7 +38,7 @@ export default function SettingsPage() {
   );
 }
 
-function SettingRow({ k, value, onSave }: { k: keyof EngineSettings; value: number; onSave: (v: number) => void }) {
+function SettingRow({ k, value, locked, onSave }: { k: keyof EngineSettings; value: number; locked: boolean; onSave: (v: number) => void }) {
   const meta = SETTING_HELP[k];
   const toShow = (v: number) => (meta.kind === "pct" ? String(Math.round(v * 1000) / 10) : String(v));
   const [v, setV] = useState(toShow(value));
@@ -46,9 +50,9 @@ function SettingRow({ k, value, onSave }: { k: keyof EngineSettings; value: numb
       <div className="text-[13px] font-medium">{meta.label}</div>
       <div className="text-[12px] text-muted">{meta.help}</div>
       <div className="flex items-center justify-end gap-2">
-        <input className={`w-24 rounded-md border px-2 py-1 text-right text-[13px] ${valid ? "border-line" : "border-bad"}`} value={v} onChange={(e) => setV(e.target.value)} />
+        <input className={`w-24 rounded-md border px-2 py-1 text-right text-[13px] ${valid ? "border-line" : "border-bad"}`} value={v} disabled={locked} onChange={(e) => setV(e.target.value)} />
         <span className="w-6 text-[12px] text-muted">{meta.kind === "pct" ? "%" : meta.kind === "ratio" ? "x" : ""}</span>
-        <Button variant={changed ? "primary" : "default"} disabled={!changed} onClick={() => onSave(parsed)}>
+        <Button variant={changed ? "primary" : "default"} disabled={!changed || locked} onClick={() => onSave(parsed)}>
           Save
         </Button>
       </div>

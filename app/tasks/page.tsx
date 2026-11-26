@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEditTask, taskBlockReason } from "@/lib/auth/permissions";
 import { tasksView } from "@/lib/engine";
 import { Badge, Button, Card, Empty, Modal, PageHeader } from "@/components/ui";
 import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
@@ -13,6 +15,7 @@ const LABEL = { todo: "To do", doing: "Doing", blocked: "Blocked", done: "Done" 
 
 export default function TasksPage() {
   const { data, asOf, updateTask, deleteTask } = useStore();
+  const me = useAuth((s) => s.me);
   const [draft, setDraft] = useState<TaskDraft | null>(null);
   const [status, setStatus] = useState<string>("");
   const [overdueOnly, setOverdueOnly] = useState(false);
@@ -67,6 +70,8 @@ export default function TasksPage() {
             <tbody>
               {rows.map((t) => {
                 const ref = t.origin_ref as { reason?: string; asOf?: string } | null;
+                const mine = canEditTask(me, t.owner_id, data.team);
+                const why = mine || !t.owner_id ? undefined : taskBlockReason(t.owner_id, data.team);
                 return (
                   <tr key={t.id} className={`border-b border-line/60 align-top ${t.status === "done" ? "text-muted" : ""}`}>
                     <td className="max-w-md px-2 py-2">
@@ -86,7 +91,7 @@ export default function TasksPage() {
                     </td>
                     <td className="px-2 py-2 capitalize">{t.priority}</td>
                     <td className="px-2 py-2">
-                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={t.status} onChange={(e) => updateTask(t.id, { status: e.target.value as TaskDraft["status"] })}>
+                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={t.status} disabled={!mine} title={why} onChange={(e) => updateTask(t.id, { status: e.target.value as TaskDraft["status"] })}>
                         {STATUS.map((s) => (
                           <option key={s} value={s}>
                             {LABEL[s]}
@@ -99,7 +104,7 @@ export default function TasksPage() {
                       {ref?.asOf && <div className="mt-0.5 text-[11px] text-muted">as of {ref.asOf}</div>}
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <button className="text-muted hover:text-bad" onClick={() => setConfirmDelete(t.id)} aria-label="Delete task">
+                      <button className="text-muted hover:text-bad disabled:opacity-30 disabled:hover:text-muted" disabled={!mine} title={why} onClick={() => setConfirmDelete(t.id)} aria-label="Delete task">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>

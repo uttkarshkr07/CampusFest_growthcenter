@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth/store";
+import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { toIstIso, type SourceTable } from "@/lib/engine";
 import { Badge, Button, Empty, Field, Modal, inputCls } from "./ui";
 
@@ -57,6 +59,7 @@ export default function EditableTable({
   note?: string;
 }) {
   const { data, updateSourceRow, insertSourceRow } = useStore();
+  const mayEdit = canEdit(useAuth((s) => s.me), table);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<{ row: number; key: string; value: string } | null>(null);
@@ -117,11 +120,12 @@ export default function EditableTable({
           />
         </div>
         <span className="text-[12px] text-muted">{rows.length.toLocaleString("en-IN")} rows (raw, duplicates included)</span>
-        <Button className="ml-auto" onClick={openAdd}>
+        <Button className="ml-auto" onClick={openAdd} disabled={!mayEdit} title={mayEdit ? undefined : whoCanEdit(table)}>
           <Plus className="h-4 w-4" /> Add row
         </Button>
       </div>
       {note && <p className="mb-2 text-[12px] text-muted">{note}</p>}
+      {!mayEdit && <p className="mb-2 rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">View only for you. {whoCanEdit(table)}</p>}
       {shown.length === 0 ? (
         <Empty>No rows.</Empty>
       ) : (
@@ -132,7 +136,7 @@ export default function EditableTable({
                 {cols.map((c) => (
                   <th key={c.key} className="whitespace-nowrap px-2 py-1.5 font-medium">
                     {c.label}
-                    {c.editable === false ? "" : " ✎"}
+                    {c.editable === false || !mayEdit ? "" : " ✎"}
                   </th>
                 ))}
                 <th />
@@ -143,7 +147,7 @@ export default function EditableTable({
                 <tr key={r._row_id} className="border-b border-line/60">
                   {cols.map((c) => {
                     const isEdit = editing && editing.row === r._row_id && editing.key === c.key;
-                    const canEdit = c.editable !== false;
+                    const editable = mayEdit && c.editable !== false;
                     return (
                       <td key={c.key} className={`whitespace-nowrap px-2 py-1 ${c.type === "number" ? "tabular text-right" : ""}`} style={{ width: c.width }}>
                         {isEdit ? (
@@ -169,9 +173,9 @@ export default function EditableTable({
                           )
                         ) : (
                           <button
-                            disabled={!canEdit}
-                            className={`w-full rounded px-1 text-left ${c.type === "number" ? "text-right" : ""} ${canEdit ? "hover:bg-brand-soft" : "cursor-default"}`}
-                            onClick={() => canEdit && setEditing({ row: r._row_id!, key: c.key, value: c.type === "datetime" ? toLocalInput(r[c.key]) : String(r[c.key] ?? "") })}
+                            disabled={!editable}
+                            className={`w-full rounded px-1 text-left ${c.type === "number" ? "text-right" : ""} ${editable ? "hover:bg-brand-soft" : "cursor-default"}`}
+                            onClick={() => editable && setEditing({ row: r._row_id!, key: c.key, value: c.type === "datetime" ? toLocalInput(r[c.key]) : String(r[c.key] ?? "") })}
                           >
                             {display(r[c.key], c.type) || <span className="text-slate-300">empty</span>}
                           </button>

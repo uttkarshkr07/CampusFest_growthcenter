@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { MessageSquarePlus, X } from "lucide-react";
+import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
 import { MASCOT } from "@/lib/mascot";
 import { useStore } from "@/lib/store";
@@ -22,10 +23,11 @@ export default function CopilotPanel() {
   const { open, setOpen, init, newChat, sessions, currentId, openSession, busy } = useChat();
   const ready = useStore((s) => s.status === "ready");
   const path = usePathname();
+  const userKey = useAuth((s) => s.me?.userId ?? "local");
 
   useEffect(() => {
-    void init("local");
-  }, [init]);
+    void init(userKey);
+  }, [init, userKey]);
 
   if (!ready || path.startsWith("/copilot")) return null;
   if (!open)

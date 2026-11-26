@@ -1,0 +1,9 @@
+[
+  { "key": "reviewer", "name": "Reviewer", "email": "reviewer@campusfest.example", "personId": null, "reviewer": true, "teams": [] },
+  { "key": "meera", "name": "Meera Iyer", "email": "meera.iyer@campusfest.example", "personId": "T03", "reviewer": false, "teams": ["publicity", "sponsorship"] },
+  { "key": "arjun", "name": "Arjun Verma", "email": "arjun.verma@campusfest.example", "personId": "T04", "reviewer": false, "teams": ["publicity"] },
+  { "key": "nisha", "name": "Nisha Rao", "email": "nisha.rao@campusfest.example", "personId": "T05", "reviewer": false, "teams": ["publicity", "sponsorship"] },
+  { "key": "dev", "name": "Dev Malhotra", "email": "dev.malhotra@campusfest.example", "personId": "T06", "reviewer": false, "teams": ["events"] },
+  { "key": "riya", "name": "Riya Kapoor", "email": "riya.kapoor@campusfest.example", "personId": "T01", "reviewer": false, "teams": ["sponsorship"] },
+  { "key": "kabir", "name": "Kabir Shah", "email": "kabir.shah@campusfest.example", "personId": "T02", "reviewer": false, "teams": ["sponsorship"] }
+]

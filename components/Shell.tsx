@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { BarChart3, Calculator, Database, LayoutDashboard, ListChecks, RotateCcw, Settings, Target, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
+import Login from "./Login";
+import { AUTH_ON } from "@/lib/auth/config";
+import { useAuth } from "@/lib/auth/store";
+import { useChat } from "@/lib/copilot/store";
 import { STORY, useStore } from "@/lib/store";
 import { Button, Modal, Spinner } from "./ui";
 import { fmtDate } from "@/lib/format";
@@ -25,9 +29,20 @@ export default function Shell({ children }: { children: ReactNode }) {
   const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
+  const { status: authStatus, me, init: initAuth, signOut } = useAuth();
+  const canReset = !me || me.isReviewer;
+
   useEffect(() => {
-    if (status === "idle") load();
-  }, [status, load]);
+    void initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    if (authStatus === "ready" && status === "idle") load();
+    if (authStatus === "signedOut") {
+      useStore.getState().clear();
+      useChat.getState().reset();
+    }
+  }, [authStatus, status, load]);
 
   useEffect(() => {
     if (!toast) return;
@@ -40,6 +55,8 @@ export default function Shell({ children }: { children: ReactNode }) {
     { label: "Event day 1", day: STORY.day1, hint: "12 Apr 2025" },
     { label: "Post-event", day: STORY.post, hint: "20 Apr 2025: final data" },
   ];
+
+  if (AUTH_ON && authStatus !== "ready") return authStatus === "checking" ? <div className="p-6"><Spinner label="Checking your sign-in..." /></div> : <Login />;
 
   return (
     <div className="flex min-h-screen">
@@ -63,7 +80,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b border-line bg-white/95 px-5 py-2.5 backdrop-blur">
-          <Button variant="ghost" onClick={() => setConfirmReset(true)} title="Restore the original dataset">
+          <Button variant="ghost" onClick={() => setConfirmReset(true)} disabled={!canReset} title={canReset ? "Restore the original dataset" : "Only the Reviewer account can reset the demo data"}>
             <RotateCcw className="h-3.5 w-3.5" /> Reset demo data
           </Button>
           {saving && <span className="text-[12px] text-muted">Saving...</span>}
@@ -87,6 +104,17 @@ export default function Shell({ children }: { children: ReactNode }) {
             />
             <span className="hidden text-[12px] text-muted xl:inline">end of {fmtDate(asOf)} IST</span>
           </div>
+          {me && (
+            <div className="flex items-center gap-2 border-l border-line pl-3 text-[12px]">
+              <div className="leading-tight">
+                <div className="font-semibold">{me.name}</div>
+                <div className="text-[11px] text-muted">{me.isReviewer ? "can edit everything" : me.teams.join(", ")}</div>
+              </div>
+              <button onClick={() => signOut()} className="rounded-md border border-line px-2 py-1 hover:bg-slate-50">
+                Switch account
+              </button>
+            </div>
+          )}
         </header>
 
         <main className="min-w-0 flex-1 p-5">

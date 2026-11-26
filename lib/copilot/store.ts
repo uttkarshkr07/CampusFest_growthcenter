@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { accessToken, useAuth } from "@/lib/auth/store";
 import { buildSummary, executeToolAsOf } from "@/lib/engine";
 import { useStore } from "@/lib/store";
 import { callModel } from "./client";
@@ -19,6 +20,8 @@ interface ChatState {
   userKey: string | null;
   setOpen: (open: boolean) => void;
   init: (userKey: string) => Promise<void>;
+  /** forget the previous account's chats after signing out */
+  reset: () => void;
   newChat: () => void;
   openSession: (id: string) => Promise<void>;
   renameSession: (id: string, title: string) => Promise<void>;
@@ -40,6 +43,11 @@ export const useChat = create<ChatState>((set, get) => ({
   userKey: null,
 
   setOpen: (open) => set({ open }),
+
+  reset: () => {
+    storage = null;
+    set({ open: false, sessions: [], currentId: null, messages: [], userKey: null });
+  },
 
   init: async (userKey) => {
     if (get().userKey === userKey) return;
@@ -82,7 +90,10 @@ export const useChat = create<ChatState>((set, get) => ({
   send: async (question) => {
     const text = question.trim().slice(0, 1000);
     const { data, asOf } = useStore.getState();
-    if (!text || get().busy || !data || !storage) return;
+    // keep this account's storage even if someone switches account while the answer is on its way
+    const own = storage;
+    if (!text || get().busy || !data || !own) return;
+    const me = useAuth.getState().me;
     const history = get().messages;
     let sessionId = get().currentId;
     const now = new Date().toISOString();
@@ -92,20 +103,20 @@ export const useChat = create<ChatState>((set, get) => ({
       if (!sessionId) {
         sessionId = crypto.randomUUID();
         // the title is the first question, so naming a chat costs no model request
-        await storage.createSession({ id: sessionId, title: text.slice(0, 60), createdAt: now, updatedAt: now });
+        await own.createSession({ id: sessionId, title: text.slice(0, 60), createdAt: now, updatedAt: now });
         set({ currentId: sessionId });
       }
-      await storage.saveMessage(sessionId, user);
-      set({ sessions: await storage.listSessions() });
+      await own.saveMessage(sessionId, user);
+      set({ sessions: await own.listSessions() });
       let reply: ChatMessage;
       try {
         reply = await runTurn({
           question: text,
           selectedDate: asOf,
           summary: buildSummary(data, asOf),
-          context: { today: asOf },
+          context: { today: asOf, ...(me ? { signedInUser: { name: me.name, teams: me.teams, isReviewer: me.isReviewer } } : {}) },
           history,
-          callModel: (req) => callModel(req),
+          callModel: async (req) => callModel(req, await accessToken()),
           // read the store again so a data edit made mid-answer is used
           runTool: (name, args) => executeToolAsOf(useStore.getState().data ?? data, name, args, asOf),
           onStatus: (status) => set({ status }),
@@ -113,8 +124,8 @@ export const useChat = create<ChatState>((set, get) => ({
       } catch (e) {
         reply = { id: crypto.randomUUID(), role: "assistant", text: e instanceof Error ? e.message : "Something went wrong.", asOf, createdAt: new Date().toISOString(), error: true };
       }
-      await storage.saveMessage(sessionId, reply);
-      if (get().currentId === sessionId) set({ messages: [...get().messages, reply] });
+      await own.saveMessage(sessionId, reply);
+      if (storage === own && get().currentId === sessionId) set({ messages: [...get().messages, reply] });
     } finally {
       set({ busy: false, status: "" });
     }

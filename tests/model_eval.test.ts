@@ -71,7 +71,9 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       loadEnvLocal();
       process.env.GEMINI_MODELS = MODEL; // one model only, so no silent fallback
       delete process.env.GEMINI_BASE_URL;
-      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      delete process.env.NEXT_PUBLIC_AUTH_MODE; // the question set calls the route without signing in
+      // read only; the local service key still works once visitors are locked out
+      const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
       const { data, error } = await db.rpc("get_dataset");
       expect(error).toBeNull();
       const base = data as E.Dataset;
