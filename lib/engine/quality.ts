@@ -134,6 +134,26 @@ function findIssues(data: Dataset, sponsor: SponsorData | null | undefined): Iss
   links("registration_history", history, "history_id", "registration_id", regIds, "registration", "The status applies to no registration.");
   links("checkins", checkins, "event_id", "registration_id", regIds, "registration", "The scan is still matched to its person.");
 
+  // names are repeated beside ids in the source; the app goes by the id
+  const personName = new Map(people.map((p) => [String(p.person_id), p.person_name]));
+  const campaignName = new Map(campaigns.map((c) => [String(c.campaign_id), c.campaign_name]));
+  for (const [table, rows, idField] of [
+    ["daily_marketing", daily, "activity_id"],
+    ["interactions", interactions, "interaction_id"],
+    ["registrations", registrations, "registration_id"],
+    ["registration_history", history, "history_id"],
+    ["checkins", checkins, "event_id"],
+  ] as const) {
+    for (const r of rows) {
+      for (const [nameColumn, idColumn, names] of [["person_name", "person_id", personName], ["campaign_name", "campaign_id", campaignName]] as const) {
+        const written = r[nameColumn];
+        const known = names.get(String(r[idColumn]));
+        if (typeof written === "string" && written && typeof known === "string" && written.trim() !== known.trim())
+          add("name_mismatch", "check", table, "Name does not match its ID", "The app goes by the ID and shows that record's name.", r, r[idField], `${nameColumn} ${JSON.stringify(written)}, but ${String(r[idColumn])} is ${JSON.stringify(known)}`);
+      }
+    }
+  }
+
   const withHistory = ids(history, "registration_id");
   for (const r of registrations) if (!withHistory.has(String(r.registration_id))) add("no_status", "check", "registrations", "Registration with no status history", "Registered, with no status.", r, r.registration_id, "no history rows");
   const byPerson = new Map<string, Row[]>();

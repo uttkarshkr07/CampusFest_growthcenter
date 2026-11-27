@@ -31,7 +31,7 @@ const NAV = [
 
 export default function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving, story } = useStore();
+  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving, story, loadProgress } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
   const { status: authStatus, me, init: initAuth, signOut } = useAuth();
@@ -134,7 +134,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
         <main className="min-w-0 flex-1 p-5">
           {status === "loading" || status === "idle" ? (
-            <Spinner label="Loading the CampusFest dataset (about 25,000 rows)..." />
+            <Spinner label={loadProgress || "Loading the dataset..."} />
           ) : status === "error" ? (
             <div className="max-w-xl rounded-lg border border-red-200 bg-bad-soft p-4 text-bad">
               <div className="font-semibold">Could not load data</div>

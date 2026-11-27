@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { ChangeLogRow, Dataset, SourceTable, TaskRow, CampaignPlanRow, TargetRow, CampaignRow, TicketStatus } from "@/lib/engine/types";
 import { getSupabase } from "@/lib/supabase";
 import { storyDates, type Story } from "@/lib/story";
+import { loadDataset } from "@/lib/data/load";
 
 
 type Status = "idle" | "loading" | "ready" | "error";
@@ -23,6 +24,7 @@ interface State {
   asOf: string;
   /** the date range and named dates, read from the data */
   story: Story | null;
+  loadProgress: string;
   saving: boolean;
   toast: string | null;
   setAsOf: (d: string) => void;
@@ -109,6 +111,7 @@ export const useStore = create<State>((set, get) => {
     error: null,
     asOf: "",
     story: null,
+    loadProgress: "",
     saving: false,
     toast: null,
     ticketsReady: false,
@@ -122,17 +125,17 @@ export const useStore = create<State>((set, get) => {
         set({ status: "error", error: "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY." });
         return;
       }
-      set({ status: "loading", error: null });
-      const { data, error } = await db.rpc("get_dataset");
-      if (error || !data) {
-        set({ status: "error", error: error?.message ?? "Empty response from get_dataset()" });
-        return;
+      set({ status: "loading", error: null, loadProgress: "Loading the dataset..." });
+      try {
+        const result = await loadDataset(db, (loadProgress) => set({ loadProgress }));
+        const loaded = { ...EMPTY_APP, ...result.data };
+        const story = storyDates(loaded);
+        const picked = get().asOf;
+        // keep the date already chosen if the data still covers it; otherwise show the end of the story
+        set({ data: loaded, status: "ready", ticketsReady: result.hasTickets, story, asOf: picked >= story.min && picked <= story.max ? picked : story.post });
+      } catch (e) {
+        set({ status: "error", error: e instanceof Error ? e.message : String(e) });
       }
-      const loaded = { ...EMPTY_APP, ...(data as Dataset) };
-      const story = storyDates(loaded);
-      const picked = get().asOf;
-      // keep the date already chosen if the data still covers it; otherwise show the end of the story
-      set({ data: loaded, status: "ready", ticketsReady: "tickets" in (data as object), story, asOf: picked >= story.min && picked <= story.max ? picked : story.post });
     },
 
     updateSourceRow: async (table, rowId, patch, rowRef) => {

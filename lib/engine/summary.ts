@@ -12,7 +12,7 @@ function availability(view: Dataset) {
   const out: Record<string, { rows: number; fields: string[] }> = {};
   for (const table of SOURCE_TABLES) {
     const rows = (view[table] ?? []) as unknown as Record<string, unknown>[];
-    out[table] = { rows: rows.length, fields: rows.length ? Object.keys(rows[0]).filter((k) => !k.startsWith("_")) : [] };
+    out[table] = { rows: rows.length, fields: rows.length ? Object.keys(rows[0]).filter((k) => !k.startsWith("_")).sort() : [] };
   }
   return out;
 }

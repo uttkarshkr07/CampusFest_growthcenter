@@ -187,6 +187,25 @@ else if (clients.reviewer && clients.meera && clients.arjun && clients.riya && c
   await admin.from("tickets").delete().eq("title", TEMP_TICKET);
 }
 
+// paged loading and the load commands (present after the large-data patch)
+const paged = await admin.rpc("get_app_data");
+const hasPaged = !paged.error;
+if (!hasPaged) console.log("Large-data patch not run yet: its checks are skipped.");
+else if (clients.reviewer && clients.dev) {
+  for (const [name, db] of [["Reviewer", clients.reviewer], ["Dev", clients.dev]]) {
+    const head = await db.rpc("get_app_data");
+    check(!head.error && head.data?.ranges?.people?.[2] > 0, `${name}: can load the app data (${head.error?.message ?? "empty"})`);
+    const from = head.data?.ranges?.people?.[0] ?? 1;
+    const page = await db.rpc("get_rows", { p_table: "people", p_from: from, p_to: from + 9 });
+    check(!page.error && page.data?.rows?.length > 0 && page.data.cols.includes("person_id"), `${name}: can load a page of rows (${page.error?.message ?? "empty"})`);
+    const originals = await db.from("original_tickets").select("ticket_key").limit(1);
+    check(!!originals.error || originals.data.length === 0, `${name}: must not read the original tables`);
+  }
+  // asked only as a non-service account: it must be refused, so nothing is emptied
+  const wipe = await clients.dev.rpc("prepare_data_load");
+  check(!!wipe.error, "Dev: must not be able to start a data load");
+}
+
 const visitor = createClient(url, anonKey, noSession);
 const open = await visitor.rpc("get_dataset");
 const locked = !!open.error;
@@ -204,6 +223,10 @@ if (hasSponsor) {
 if (hasTickets) {
   const peekTickets = await visitor.from("tickets").select("id");
   check(!!peekTickets.error || peekTickets.data.length === 0, "Not signed in: cannot read tickets");
+}
+if (hasPaged) {
+  check(!!(await visitor.rpc("get_app_data")).error, "Not signed in: cannot load the app data");
+  check(!!(await visitor.rpc("get_rows", { p_table: "people", p_from: 1, p_to: 10 })).error, "Not signed in: cannot load rows");
 }
 if (expectLocked) check(locked, "Not signed in: get_dataset must be refused (has part B been run?)");
 
