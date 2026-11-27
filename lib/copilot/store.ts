@@ -3,11 +3,13 @@
 import { create } from "zustand";
 import { AUTH_ON } from "@/lib/auth/config";
 import { accessToken, useAuth } from "@/lib/auth/store";
-import { buildSummary, executeToolAsOf } from "@/lib/engine";
+import { buildSummary, executeSponsorTool, executeToolAsOf } from "@/lib/engine";
+import { useSponsor } from "@/lib/sponsor/store";
 import { useStore } from "@/lib/store";
 import { getSupabase } from "@/lib/supabase";
 import { callModel } from "./client";
 import { runTurn } from "./loop";
+import { SPONSOR_TOOL } from "./tool-defs.names";
 import { localChatStorage, type ChatStorage, type SessionMeta } from "./storage";
 import { databaseChatStorage } from "./storage-db";
 import type { ChatAction, ChatMessage } from "./types";
@@ -185,7 +187,10 @@ export const useChat = create<ChatState>((set, get) => ({
           history,
           callModel: async (req) => callModel(req, await accessToken()),
           // read the store again so a data edit made mid-answer is used
-          runTool: (name, args) => executeToolAsOf(useStore.getState().data ?? data, name, args, asOf),
+          runTool: (name, args) =>
+            name === SPONSOR_TOOL
+              ? useSponsor.getState().load().then((sponsor) => executeSponsorTool(sponsor, args, asOf))
+              : executeToolAsOf(useStore.getState().data ?? data, name, args, asOf),
           onStatus: (status) => storage === own && set({ status }),
         });
       } catch (e) {

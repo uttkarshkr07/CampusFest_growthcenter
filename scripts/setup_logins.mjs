@@ -129,6 +129,21 @@ if (clients.reviewer && clients.arjun) {
   await clients.reviewer.from("chat_sessions").delete().eq("id", id);
 }
 
+// sponsor records: members read, nobody writes from the app
+const sponsorTable = await admin.from("sponsor_data").select("sheet", { count: "exact", head: true });
+const hasSponsor = !sponsorTable.error;
+if (!hasSponsor) console.log("Sponsor table not created yet: its checks are skipped.");
+else {
+  for (const key of ["reviewer", "dev"]) {
+    const db = clients[key];
+    if (!db) continue;
+    const read = await db.from("sponsor_data").select("sheet");
+    check(!read.error, `${key}: can read sponsor records (${read.error?.message})`);
+    const write = await db.from("sponsor_data").update({ sheet: "targets" }).eq("sheet", "targets").select("sheet");
+    check(!!write.error || write.data.length === 0, `${key}: must not be able to change sponsor records`);
+  }
+}
+
 const visitor = createClient(url, anonKey, noSession);
 const open = await visitor.rpc("get_dataset");
 const locked = !!open.error;
@@ -138,6 +153,10 @@ if (locked) {
   const s = samples.campaigns;
   const write = await visitor.from("campaigns").update({ [s.column]: s.value }).eq(s.key, s.id).select(s.key);
   check(!!write.error || write.data.length === 0, "Not signed in: cannot edit");
+}
+if (hasSponsor) {
+  const peekSponsor = await visitor.from("sponsor_data").select("sheet");
+  check(!!peekSponsor.error || peekSponsor.data.length === 0, "Not signed in: cannot read sponsor records");
 }
 if (expectLocked) check(locked, "Not signed in: get_dataset must be refused (has part B been run?)");
 

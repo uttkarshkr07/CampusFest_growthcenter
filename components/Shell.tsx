@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Calculator, Database, LayoutDashboard, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
+import { BarChart3, Calculator, Database, Handshake, LayoutDashboard, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
 import Login from "./Login";
 import { AUTH_ON } from "@/lib/auth/config";
 import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
+import { useSponsor } from "@/lib/sponsor/store";
 import { STORY, useStore } from "@/lib/store";
 import { Button, Modal, Spinner } from "./ui";
 import { fmtDate } from "@/lib/format";
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/actions", label: "Actions", icon: Target },
   { href: "/whatif", label: "What-if", icon: Calculator },
   { href: "/people", label: "People", icon: Users },
+  { href: "/sponsors", label: "Sponsors", icon: Handshake },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/data", label: "Data", icon: Database },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -42,6 +44,7 @@ export default function Shell({ children }: { children: ReactNode }) {
     if (authStatus === "signedOut") {
       useStore.getState().clear();
       useChat.getState().reset();
+      useSponsor.getState().clear();
     }
   }, [authStatus, status, load]);
 

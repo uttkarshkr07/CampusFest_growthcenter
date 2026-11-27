@@ -9,4 +9,6 @@ next-env.d.ts
 .env.local
 .env*.local
 .dev.vars
+# sponsor records: loaded into the database, not published in the repository
+data/private/
 .DS_Store

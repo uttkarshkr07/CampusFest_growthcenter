@@ -356,6 +356,61 @@
   "description": "Event dates, history window and every target version."
  },
  {
+  "name": "sponsor",
+  "description": "Sponsor acquisition records, which are separate from the attendee data: brands, contacts, outreach, qualification, partnership opportunities and links to attendee campaigns. Reports: overview (goals, brand counts, opportunity stages, reported value); campaigns (results per sponsor campaign); opportunities (latest state of each; filter by stage or search); brands (search, or filter by qualification); brand (one brand's full history; search = brand ID or exact name); activations (sponsor links to attendee campaigns). Reported sponsorship value is not proof of payment.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "report": {
+     "type": "string",
+     "enum": [
+      "overview",
+      "campaigns",
+      "opportunities",
+      "brands",
+      "brand",
+      "activations"
+     ]
+    },
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "search": {
+     "type": "string",
+     "description": "Text to find; for report 'brand', the brand ID or exact name."
+    },
+    "stage": {
+     "type": "string",
+     "enum": [
+      "prospecting",
+      "contacted",
+      "proposal_sent",
+      "negotiating",
+      "partner_confirmed",
+      "lost",
+      "withdrawn"
+     ],
+     "description": "For report 'opportunities'."
+    },
+    "qualification": {
+     "type": "string",
+     "enum": [
+      "unreviewed",
+      "engaged",
+      "qualified",
+      "unqualified",
+      "dormant"
+     ],
+     "description": "For report 'brands'."
+    }
+   },
+   "required": [
+    "report"
+   ]
+  }
+ },
+ {
   "name": "proposeTask",
   "description": "Show the user a draft of ONE new task to review, edit and confirm. Nothing is saved until they confirm.",
   "parameters": {

@@ -7,5 +7,6 @@ export * from "./query";
 export * from "./actions";
 export * from "./whatif";
 export { viewAsOf } from "./view";
+export * from "./sponsor";
 export { buildSummary, type Summary } from "./summary";
 export { resolveAsOf, istDay, addDays, toIstIso } from "./time";

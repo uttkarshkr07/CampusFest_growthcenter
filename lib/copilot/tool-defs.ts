@@ -3,8 +3,9 @@
 // Regenerate after changing the catalog:  UPDATE_DECLARATIONS=1 npx vitest run tests/copilot_loop.test.ts
 import { z } from "zod";
 import { catalog, type ToolName } from "@/lib/engine/catalog";
+import { QUALIFICATIONS, SPONSOR_REPORTS, STAGES } from "@/lib/engine/sponsor";
 import { APP_TARGETS, APP_TARGET_KEYS } from "./targets";
-import { OPEN_IN_APP, PROPOSE_TASK } from "./tool-defs.names";
+import { OPEN_IN_APP, PROPOSE_TASK, SPONSOR_TOOL } from "./tool-defs.names";
 
 export const MODEL_TOOLS: ToolName[] = [
   "funnel", "targetsVsActuals", "campaignTable", "flags", "projection", "pace", "momentum", "showupDrivers",
@@ -50,6 +51,22 @@ export function buildDeclarations(): Declaration[] {
   });
   return [
     ...fromCatalog,
+    {
+      name: SPONSOR_TOOL,
+      description:
+        "Sponsor acquisition records, which are separate from the attendee data: brands, contacts, outreach, qualification, partnership opportunities and links to attendee campaigns. Reports: overview (goals, brand counts, opportunity stages, reported value); campaigns (results per sponsor campaign); opportunities (latest state of each; filter by stage or search); brands (search, or filter by qualification); brand (one brand's full history; search = brand ID or exact name); activations (sponsor links to attendee campaigns). Reported sponsorship value is not proof of payment.",
+      parameters: {
+        type: "object",
+        properties: {
+          report: { type: "string", enum: [...SPONSOR_REPORTS] },
+          asOf: { type: "string", description: "Optional YYYY-MM-DD; default is the selected date." },
+          search: { type: "string", description: "Text to find; for report 'brand', the brand ID or exact name." },
+          stage: { type: "string", enum: [...STAGES], description: "For report 'opportunities'." },
+          qualification: { type: "string", enum: [...QUALIFICATIONS], description: "For report 'brands'." },
+        },
+        required: ["report"],
+      },
+    },
     {
       name: PROPOSE_TASK,
       description: "Show the user a draft of ONE new task to review, edit and confirm. Nothing is saved until they confirm.",

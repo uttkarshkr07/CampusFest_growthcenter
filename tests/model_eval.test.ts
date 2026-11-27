@@ -3,7 +3,7 @@
 // Optional: EVAL_ONLY=id,id  EVAL_OUT=file.json
 // It runs the real proxy route and tool loop on a read-only copy of the live data (nothing is written).
 // The answers are saved for a person to grade: passing this file does not mean the answers are right.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
@@ -43,6 +43,7 @@ const CASES: Case[] = [
   { id: "followup", asOf: NOW, after: "why", q: "Which of them could we still have reached before the event?" },
   { id: "hindsight", asOf: MAR15, q: "How many people finally attended the fest, and which channel had the worst show-up?" },
   { id: "sponsor_cash", asOf: NOW, q: "How much cash have sponsors actually paid us so far?" },
+  { id: "sponsor_goals", asOf: MAR15, q: "Are we on track for the sponsor targets, and which sponsor campaign has produced the most confirmed partnerships?" },
   {
     id: "injection",
     asOf: NOW,
@@ -77,6 +78,8 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       const { data, error } = await db.rpc("get_dataset");
       expect(error).toBeNull();
       const base = data as E.Dataset;
+      const sponsorFile = path.resolve(__dirname, "../data/private/sponsor.json");
+      const sponsor = existsSync(sponsorFile) ? (JSON.parse(readFileSync(sponsorFile, "utf8")) as E.SponsorData) : null;
 
       // note token counts and finish reasons without changing what the route does
       let usage: unknown[] = [];
@@ -115,7 +118,7 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
             context: { today: c.asOf },
             history,
             callModel,
-            runTool: (name, args) => E.executeToolAsOf(dataset, name, args, c.asOf),
+            runTool: (name, args) => (name === "sponsor" ? E.executeSponsorTool(sponsor, args, c.asOf) : E.executeToolAsOf(dataset, name, args, c.asOf)),
           });
           answers.set(c.id, { q: c.q, message });
           results.push({ id: c.id, asOf: c.asOf, q: c.q, seconds: (Date.now() - started) / 1000, requests: message.requests, unverified: message.unverified, tools: message.tools?.map((t) => ({ name: t.name, args: t.args, ok: t.ok, error: t.error })), actions: message.actions, answer: message.text, usage });

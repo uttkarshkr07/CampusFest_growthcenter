@@ -13,7 +13,14 @@ const LAST_ROUND_NOTE = "No more lookups are available for this question. Do not
 // some small models type the button call out as a Markdown link instead of calling the function
 const TYPED_BUTTON = /\[[^\]\n]*\]\(\s*openInApp\?([^)\n]*)\)/g;
 
-export type ToolRunner = (name: string, args: unknown) => { ok: boolean; asOfUsed: string; result?: unknown; error?: string };
+export interface ToolOutcome {
+  ok: boolean;
+  asOfUsed: string;
+  result?: unknown;
+  error?: string;
+}
+/** May be async: some records are fetched only when a question needs them. */
+export type ToolRunner = (name: string, args: unknown) => ToolOutcome | Promise<ToolOutcome>;
 
 export interface TurnInput {
   question: string;
@@ -133,7 +140,7 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
       } else {
         needsAnotherRound = true;
         input.onStatus?.(`Checking the data: ${call.name}...`);
-        const out = input.runTool(call.name, args);
+        const out = await input.runTool(call.name, args);
         const result = out.result as { value?: unknown; basis?: string[]; caveats?: string[] } | undefined;
         traces.push({ name: call.name, args, asOfUsed: out.asOfUsed, ok: out.ok, basis: result?.basis ?? [], caveats: result?.caveats ?? [], value: result?.value ?? null, error: out.error });
         response = out.ok ? compactResult(result) : { error: out.error };
