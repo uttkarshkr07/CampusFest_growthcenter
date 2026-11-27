@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { executeSponsorTool, sponsorActivations, sponsorBrand, sponsorBrands, sponsorCampaigns, sponsorOpportunities, sponsorOverview, type SponsorData } from "@/lib/engine/sponsor";
 
@@ -98,9 +98,9 @@ describe("sponsor tool for the copilot", () => {
   });
 });
 
-// The real records are not in the repository. These figures were also computed separately from the workbook.
-const FILE = "data/private/sponsor.json";
-describe.skipIf(!existsSync(FILE))("sponsor records from the workbook", () => {
+// These figures were also computed separately, straight from the workbook.
+const FILE = "data/seed/sponsor.json";
+describe("sponsor records from the workbook", () => {
   const data = () => JSON.parse(readFileSync(FILE, "utf8")) as SponsorData;
   it("matches the separately computed figures on 15 Mar and 20 Apr", () => {
     const d = data();

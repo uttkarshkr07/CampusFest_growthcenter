@@ -3,7 +3,7 @@
 // Optional: EVAL_ONLY=id,id  EVAL_OUT=file.json
 // It runs the real proxy route and tool loop on a read-only copy of the live data (nothing is written).
 // The answers are saved for a person to grade: passing this file does not mean the answers are right.
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
@@ -78,8 +78,7 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       const { data, error } = await db.rpc("get_dataset");
       expect(error).toBeNull();
       const base = data as E.Dataset;
-      const sponsorFile = path.resolve(__dirname, "../data/private/sponsor.json");
-      const sponsor = existsSync(sponsorFile) ? (JSON.parse(readFileSync(sponsorFile, "utf8")) as E.SponsorData) : null;
+      const sponsor = JSON.parse(readFileSync(path.resolve(__dirname, "../data/seed/sponsor.json"), "utf8")) as E.SponsorData;
 
       // note token counts and finish reasons without changing what the route does
       let usage: unknown[] = [];

@@ -29,7 +29,7 @@ ATTENDEE_SHEETS = {
     "Registration History": "registration_history",
     "Check-ins": "checkins",
 }
-# The full sponsor records go to data/private/ (not committed: the repository is public).
+# The full sponsor records are one file, data/seed/sponsor.json.
 SPONSOR_SHEETS = {
     "Targets": "targets",
     "Brands": "brands",
@@ -41,7 +41,6 @@ SPONSOR_SHEETS = {
     "Opportunity history": "opportunity_history",
     "Sponsor activations": "activations",
 }
-PRIVATE = os.path.join(HERE, "..", "data", "private")
 DATE_ONLY = {"activity_date", "history_start", "history_end"}
 
 
@@ -89,11 +88,10 @@ def main():
     swb = openpyxl.load_workbook(SPONSOR, read_only=True, data_only=True)
     write("sponsor_activations", sheet_rows(swb, "Sponsor activations"))
     sponsor = {key: sheet_rows(swb, sheet) for sheet, key in SPONSOR_SHEETS.items()}
-    os.makedirs(PRIVATE, exist_ok=True)
-    with open(os.path.join(PRIVATE, "sponsor.json"), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, "sponsor.json"), "w", encoding="utf-8") as f:
         json.dump(sponsor, f, ensure_ascii=False, separators=(",", ":"))
     for key, rows in sponsor.items():
-        print(f"private/sponsor {key:20s} {len(rows):6d} rows")
+        print(f"sponsor {key:20s} {len(rows):6d} rows")
 
 
 if __name__ == "__main__":
