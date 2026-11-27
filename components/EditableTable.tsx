@@ -180,7 +180,7 @@ export default function EditableTable({
                             className={`w-full rounded px-1 text-left ${c.type === "number" ? "text-right" : ""} ${editable ? "hover:bg-brand-soft" : "cursor-default"}`}
                             onClick={() => editable && setEditing({ row: r._row_id!, key: c.key, value: c.type === "datetime" ? toLocalInput(r[c.key]) : String(r[c.key] ?? "") })}
                           >
-                            {display(r[c.key], c.type) || <span className="text-slate-300">empty</span>}
+                            {display(r[c.key], c.type) || <span className="text-faint">empty</span>}
                           </button>
                         )}
                       </td>

@@ -5,6 +5,7 @@ export const APP_TARGETS = {
   ticket: { help: "tickets between teams: raise, comment, accept, decline or edit (id = ticket id)", href: (id?: string) => `/tickets${id ? `?focus=${id}` : ""}` },
   daily_marketing: { help: "daily marketing rows: spend and traffic (id = campaign id)", href: (id?: string) => `/data?tab=daily_marketing${id ? `&focus=${id}` : ""}` },
   targets: { help: "goal versions", href: () => "/data?tab=targets" },
+  data_quality: { help: "the data-quality list: records left out, read differently or worth a check", href: () => "/data?tab=quality" },
   checkins: { help: "gate scan rows (id = person id)", href: (id?: string) => `/data?tab=checkins${id ? `&focus=${id}` : ""}` },
   settings: { help: "assumptions and decision thresholds", href: (id?: string) => `/settings${id ? `?focus=${id}` : ""}` },
   person: { help: "one person's timeline (id = person id)", href: (id?: string) => (id ? `/people/${encodeURIComponent(id)}` : "/people") },
@@ -13,6 +14,7 @@ export const APP_TARGETS = {
   venue: { help: "a venue on the campus map: its sessions and seats (id = venue id)", href: (id?: string) => `/map${id ? `?focus=${id}` : ""}` },
   event: { help: "a session on the campus map (id = program event id)", href: (id?: string) => `/map${id ? `?focus=${id}` : ""}` },
   bet: { help: "the bet tracker: KPIs, verdicts and thresholds (id = bet id B1 to B5, or PLAN)", href: (id?: string) => `/bets${id ? `?focus=${id}` : ""}` },
+  event_rules: { help: "the Event List: an event's rules, sessions and seats (id = event id such as group-dance)", href: (id?: string) => `/events${id ? `?focus=${id}` : ""}` },
   college: { help: "the College Championship board (id = college id)", href: (id?: string) => `/championship${id ? `?focus=${id}` : ""}` },
 } as const;
 

@@ -6,6 +6,9 @@ import { ticketSummary } from "./tickets";
 import { daysBetween, resolveAsOf } from "./time";
 import { SOURCE_TABLES, type Dataset } from "./types";
 import { viewAsOf } from "./view";
+import { betTracker, VERDICT_LABEL } from "./bets";
+import { betsAsOf } from "./betview";
+import { NO_BET_RECORDS } from "./copilot_bets";
 
 /** Which tables and fields exist right now, so "the data cannot answer" follows the data, not a fixed list. */
 function availability(view: Dataset) {
@@ -32,6 +35,7 @@ export function buildSummary(data: Dataset, asOf: string) {
 
   return {
     selectedDate: asOf,
+    dataset: view.bets ? "simulated" : "original",
     phase,
     event: { name: p.event.name, firstDay: p.event.startDay, lastDay: p.event.endDay, daysUntilStart: Math.max(0, daysBetween(resolveAsOf(asOf).day, p.event.startDay)) },
     targetsVsActuals: {
@@ -64,6 +68,20 @@ export function buildSummary(data: Dataset, asOf: string) {
     teamTickets: ticketSummary(view, asOf),
     team: view.team.map((m) => ({ owner_id: m.owner_id, name: m.owner_name, team: m.team })),
     dataAvailable: availability(view),
+    // bet records exist only in the simulated run; row counts as of the date, headline verdict per bet
+    betRecords: view.bets
+      ? Object.fromEntries(Object.entries(betsAsOf(view.bets, asOf)).map(([k, rows]) => [k, rows.length]))
+      : NO_BET_RECORDS,
+    bets: view.bets
+      ? (() => {
+          const tr = betTracker(view, asOf).value;
+          return {
+            columns: ["bet", "name", "headlineKpi", "verdict", "spentInr", "budgetInr"],
+            rows: [...tr.bets, tr.plan].map((b) => [b.bet_id, b.name, b.headline?.kpiId ?? null, b.headline ? VERDICT_LABEL[b.headline.verdict] : null, b.spent, b.budget]),
+            note: "SIMULATED: a made-up run of the plan. Use betStatus for each KPI.",
+          };
+        })()
+      : null,
     definitions: [DEF.attendee, DEF.registered, DEF.attribution, DEF.spend, DEF.showup],
     caveats,
   };

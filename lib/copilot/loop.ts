@@ -12,6 +12,7 @@ const TOOL_RESPONSE_CHARS = 14000;
 const LAST_ROUND_NOTE = "No more lookups are available for this question. Do not call any function. Answer now from the SUMMARY and the results above, and say what is still missing.";
 // some small models type the button call out as a Markdown link instead of calling the function
 const TYPED_BUTTON = /\[[^\]\n]*\]\(\s*openInApp\?([^)\n]*)\)/g;
+const MADE_UP_LINK = /\[([^\]\n]+)\]\(\s*(?!https?:\/\/[^)\s/]+\.[^)\s]+|\/)[^)\n]*\)/g;
 
 export interface ToolOutcome {
   ok: boolean;
@@ -29,6 +30,8 @@ export interface TurnInput {
   /** extra context: team list, signed-in user */
   context: Record<string, unknown>;
   history: ChatMessage[];
+  /** shown as the first line of every answer, for example "Original 2025 data" */
+  datasetLabel?: string;
   callModel: (req: ModelRequest) => Promise<ModelReply>;
   runTool: ToolRunner;
   maxRequests?: number;
@@ -179,6 +182,8 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
       if (!actions.some((a) => a.type === "link" && a.href === href)) actions.push({ type: "link", id: newId(), label: str(typed.get("label"), 60) || "Take me there", href });
       return "Use the button below.";
     })
+    // any other typed link that is not a web address or an app path is made up: keep its words only
+    .replace(MADE_UP_LINK, (_all, label: string) => label)
     .trim()
     .replace(/\n\s*\*\*[^*\n]+\*\*:?$/, "") // a heading left with nothing under it
     .trim();
@@ -188,6 +193,11 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
   // The model is told to repeat the label, but that is not left to chance: if it read a simulated
   // ticket, the answer and any task drafted for that ticket carry the label.
   for (const label of new Set(simulated.values())) if (!answer.includes(label)) answer = `**${label}**\n\n${answer}`;
+  // every answer names the dataset it came from; code adds it so it never depends on the model
+  if (input.datasetLabel) {
+    const line = `*Data: ${input.datasetLabel}*`;
+    if (!answer.startsWith(line)) answer = `${line}\n\n${answer}`;
+  }
   for (const a of actions) {
     if (a.type !== "task") continue;
     const label = a.proposal.ticket_id ? simulated.get(a.proposal.ticket_id) : undefined;

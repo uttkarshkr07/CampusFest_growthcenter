@@ -94,6 +94,34 @@ describe("each KPI, by hand", () => {
     expect(k("K20", "04-03", changed).value).toBeLessThan(k("K20", "04-03").value!);
   });
 
+  it("K20 leaves out a cancelled registration with no pass, only from the date it is cancelled", () => {
+    const cancelled = p5Fixture();
+    // P11 registered and never paid
+    cancelled.registration_history.push({ history_id: "H-cancel-P11", registration_id: "R-P11", person_id: "P11", effective_at: at("03-18"), status: "cancelled" } as never);
+    expect(k("K20", "03-15", cancelled).value).toBe(k("K20", "03-15").value);
+    const mid = (3 * 0.92 * 0.92 + 5 * 0.88 * 0.94 + (0.9 + 2 * 0.85 * 0.9 + 1 * 0.7 * 0.85 * 0.9)) * 1.065;
+    // P12 registered on 10 Mar, so on 18 Mar the only change from 15 Mar is P11
+    expect(k("K20", "03-18", cancelled).value).toBe(Math.round(mid));
+    expect(k("K20", "03-18", cancelled).numbers.join(" ")).toContain("Left out: 1 cancelled registration(s)");
+    // after the pre-book deadline unpaid people already count as zero
+    expect(k("K20", "04-03", cancelled).value).toBe(k("K20", "04-03").value);
+  });
+
+  it("K22 counts a contingent discount from lock-in, not from the booking", () => {
+    const before = k("K22", "03-19"); // P02 booked on 5 Mar, locks in on 20 Mar
+    expect(before.numbers[1]).toContain("contingent discount INR 0");
+    expect(k("K22", "03-20").numbers[1]).toContain("contingent discount INR 125");
+  });
+
+  it("K22 nets a cashback reversal against the payment it reverses", () => {
+    const reversed = p5Fixture();
+    const row = { pass_id: "PS-P10", kind: "squad_cashback" };
+    reversed.bets!.payments.push({ ...row, payment_id: "PAY-wrong", amount_inr: 100, paid_at: at("04-15") }, { ...row, payment_id: "PAY-reversal", amount_inr: -100, paid_at: at("04-17") });
+    expect(k("K22", "04-16", reversed).value).toBeCloseTo((100 * (600 + 401 + 125)) / 5198, 5);
+    expect(k("K22", "04-20", reversed).value).toBeCloseTo(k("K22", "04-20").value!, 5);
+    expect(k("K22", "04-20", reversed).numbers[1]).toContain("cashback INR 500");
+  });
+
   it("adds up bet spend to date and flags a budget overrun", () => {
     expect(betTracker(data, "2025-04-09").value.bets[0]).toMatchObject({ spent: 600, overBudget: false, spendPerModelled: 60 });
     expect(betTracker(data, "2025-04-10").value.bets[0]).toMatchObject({ spent: 1200, overBudget: true });

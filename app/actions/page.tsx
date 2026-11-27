@@ -50,7 +50,7 @@ export default function ActionsPage() {
       <PageHeader title="Actions" subtitle="The people behind each funnel leak. Group sizes are not recoverable attendees." />
       <div className="grid gap-3 md:grid-cols-4">
         {res.summary.value.groups.map((g) => (
-          <button key={g.cohort} onClick={() => setCohort(g.cohort)} className={`rounded-lg border p-3 text-left ${cohort === g.cohort ? "border-brand bg-brand-soft" : "border-line bg-white hover:bg-slate-50"}`}>
+          <button key={g.cohort} onClick={() => setCohort(g.cohort)} className={`rounded-lg border p-3 text-left ${cohort === g.cohort ? "border-brand bg-brand-soft" : "border-line bg-panel hover:bg-subtle"}`}>
             <div className="text-[12px] text-muted">{g.label}</div>
             <div className="tabular text-2xl font-semibold">{num(g.count)}</div>
             {post && g.count > 0 && <div className="text-[11px] text-muted">{pct(g.laterShowUpPct)} attended in the end</div>}

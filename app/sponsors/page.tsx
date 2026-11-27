@@ -55,7 +55,7 @@ export default function SponsorsPage() {
       ) : status === "missing" ? (
         <Empty>Sponsor records have not been loaded into the database yet.</Empty>
       ) : status === "error" || !data ? (
-        <div className="max-w-xl rounded-lg border border-red-200 bg-bad-soft p-4 text-bad">
+        <div className="max-w-xl rounded-lg border border-bad/30 bg-bad-soft p-4 text-bad">
           <div className="font-semibold">Could not load sponsor records</div>
           <div className="mt-1 text-[13px]">{error}</div>
           <Button className="mt-3" onClick={() => load()}>
@@ -163,7 +163,7 @@ function Overview({ data, asOf }: { data: SponsorData; asOf: string }) {
         </div>
       </div>
       <Card title="Import copies removed">
-        <p className="text-[13px] text-slate-700">{v.dataQuality.map((d) => `${label(d.table)}: ${num(d.rows)} rows, ${num(d.unique)} unique`).join(" · ")}</p>
+        <p className="text-[13px] text-ink-2">{v.dataQuality.map((d) => `${label(d.table)}: ${num(d.rows)} rows, ${num(d.unique)} unique`).join(" · ")}</p>
         <Caveats items={r.caveats} basis={r.basis} />
       </Card>
     </div>
@@ -207,7 +207,7 @@ function Opportunities({ data, asOf }: { data: SponsorData; asOf: string }) {
     <Card title={`Opportunities (${num(r.value.total)})`}>
       <div className="mb-3 flex flex-wrap gap-2">
         <SearchBox value={search} onChange={setSearch} placeholder="Search brand, owner or ID" />
-        <select className="rounded-md border border-line bg-white px-2 py-1.5 text-[13px]" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Stage">
+        <select className="rounded-md border border-line bg-panel px-2 py-1.5 text-[13px]" value={stage} onChange={(e) => setStage(e.target.value)} aria-label="Stage">
           <option value="">All stages</option>
           {STAGES.map((s) => (
             <option key={s} value={s}>
@@ -267,7 +267,7 @@ function Brands({ data, asOf }: { data: SponsorData; asOf: string }) {
           placeholder="Search brand, industry, owner or ID"
         />
         <select
-          className="rounded-md border border-line bg-white px-2 py-1.5 text-[13px]"
+          className="rounded-md border border-line bg-panel px-2 py-1.5 text-[13px]"
           value={qualification}
           onChange={(e) => {
             setQualification(e.target.value);

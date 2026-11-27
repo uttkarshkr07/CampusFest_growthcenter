@@ -49,7 +49,7 @@ export default function DatasetToggle() {
               disabled={!active && (!!why || !!locked)}
               title={why ? `${DATASET_LABEL[id]}: ${why}` : locked || DATASET_LABEL[id]}
               onClick={() => switchTo(id)}
-              className={`px-2 py-1 text-[12px] ${active ? "bg-ink font-semibold text-white" : "bg-white hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-white"}`}
+              className={`px-2 py-1 text-[12px] ${active ? "bg-ink font-semibold text-on-accent" : "bg-panel hover:bg-subtle disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-panel"}`}
             >
               {DATASET_SHORT[id]}
               {why && simulated !== "unknown" ? `: ${why}` : ""}

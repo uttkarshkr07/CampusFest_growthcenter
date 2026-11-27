@@ -10,6 +10,7 @@ import { OPEN_IN_APP, PROPOSE_TASK, SPONSOR_TOOL } from "./tool-defs.names";
 export const MODEL_TOOLS: ToolName[] = [
   "funnel", "targetsVsActuals", "campaignTable", "flags", "projection", "pace", "momentum", "showupDrivers",
   "query", "actionList", "whatIf", "searchPeople", "person", "tasks", "tickets", "dataHealth", "eventInfo",
+  "betStatus", "bookings", "championship", "payments",
 ];
 
 export { PROPOSE_TASK, OPEN_IN_APP };

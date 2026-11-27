@@ -14,7 +14,7 @@ import ChatThread from "./ChatThread";
 export function MascotFace({ size = 28 }: { size?: number }) {
   return MASCOT.image ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={MASCOT.image} alt="" width={size} height={size} className="rounded-full object-cover" />
+    <img src={MASCOT.image} alt="" width={size} height={size} className="object-contain" />
   ) : (
     <span aria-hidden style={{ fontSize: size * 0.75, lineHeight: 1 }}>{MASCOT.emoji}</span>
   );
@@ -37,34 +37,34 @@ export default function CopilotPanel() {
   if (!ready || path.startsWith("/copilot")) return null;
   if (!open)
     return (
-      <button onClick={() => setOpen(true)} className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-line bg-white py-2 pl-3 pr-4 shadow-lg hover:bg-brand-soft" aria-label={`Open ${MASCOT.name}`}>
+      <button onClick={() => setOpen(true)} className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-line bg-panel py-2 pl-3 pr-4 shadow-lg hover:bg-brand-soft" aria-label={`Open ${MASCOT.name}`}>
         <MascotFace />
         <span className="text-[13px] font-semibold">Ask {MASCOT.name}</span>
       </button>
     );
   return (
     <aside className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[420px] flex-col border-l border-line bg-canvas shadow-xl lg:sticky lg:top-0 lg:h-screen lg:w-[400px] lg:shrink-0 lg:shadow-none">
-      <header className="flex items-center gap-2 border-b border-line bg-white px-3 py-2">
+      <header className="flex items-center gap-2 border-b border-line bg-panel px-3 py-2">
         <MascotFace />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-semibold">{MASCOT.name}</div>
           <div className="truncate text-[11px] text-muted" title="The data being answered from">{DATASET_SHORT[dataset]}</div>
         </div>
         {sessions.length > 0 && (
-          <select className="max-w-32 rounded-md border border-line bg-white px-1.5 py-1 text-[12px]" value={currentId ?? ""} disabled={busy} onChange={(e) => (e.target.value ? openSession(e.target.value) : newChat())} aria-label="Chat history">
+          <select className="max-w-32 rounded-md border border-line bg-panel px-1.5 py-1 text-[12px]" value={currentId ?? ""} disabled={busy} onChange={(e) => (e.target.value ? openSession(e.target.value) : newChat())} aria-label="Chat history">
             <option value="">New chat</option>
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
         )}
-        <button onClick={newChat} disabled={busy} className="rounded p-1 text-muted hover:bg-slate-100" title="New chat" aria-label="New chat">
+        <button onClick={newChat} disabled={busy} className="rounded p-1 text-muted hover:bg-subtle-2" title="New chat" aria-label="New chat">
           <MessageSquarePlus className="h-4 w-4" />
         </button>
-        <Link href="/copilot" className="rounded p-1 text-muted hover:bg-slate-100" title="Open full page with all chats" aria-label="Open full page with all chats">
+        <Link href="/copilot" className="rounded p-1 text-muted hover:bg-subtle-2" title="Open full page with all chats" aria-label="Open full page with all chats">
           <Maximize2 className="h-4 w-4" />
         </Link>
-        <button onClick={() => setOpen(false)} className="rounded p-1 text-muted hover:bg-slate-100" aria-label="Close">
+        <button onClick={() => setOpen(false)} className="rounded p-1 text-muted hover:bg-subtle-2" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </header>

@@ -25,7 +25,7 @@ const STATUS_STYLE: Record<TicketStatus, string> = {
   accepted: "bg-brand-soft text-brand",
   in_progress: "bg-brand-soft text-brand",
   done: "bg-good-soft text-good",
-  declined: "bg-slate-100 text-slate-600",
+  declined: "bg-subtle-2 text-muted",
 };
 
 function Status({ status }: { status: TicketStatus }) {
@@ -33,7 +33,7 @@ function Status({ status }: { status: TicketStatus }) {
 }
 
 function Simulated({ note }: { note: string }) {
-  return <div className="rounded border border-amber-300 bg-warn-soft px-2 py-1 text-[12px] font-semibold text-warn">{note}</div>;
+  return <div className="rounded border border-warn/30 bg-warn-soft px-2 py-1 text-[12px] font-semibold text-warn">{note}</div>;
 }
 
 function Due({ t }: { t: TicketAtDate }) {
@@ -94,7 +94,7 @@ export default function TicketsPage() {
         <>
           <div className="flex flex-wrap gap-2 text-[13px]">
             {FILTERS.map((f) => (
-              <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-2.5 py-1 ${filter === f ? "bg-ink text-white" : "border border-line bg-white"}`}>
+              <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-2.5 py-1 ${filter === f ? "bg-ink text-on-accent" : "border border-line bg-panel"}`}>
                 {f}
                 {f === "Waiting for my team" ? ` (${waiting.length})` : f === "All" ? ` (${tickets.length})` : f === "In progress" ? ` (${tickets.filter((t) => t.status === "in_progress").length})` : ""}
               </button>

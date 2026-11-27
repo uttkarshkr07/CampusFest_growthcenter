@@ -29,7 +29,7 @@ export default function DatasetChooser() {
             type="button"
             disabled={!!why}
             onClick={() => choose(id)}
-            className="block w-full rounded-lg border border-line bg-white p-3 text-left hover:border-brand hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line disabled:hover:bg-white"
+            className="block w-full rounded-lg border border-line bg-panel p-3 text-left hover:border-brand hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-line disabled:hover:bg-panel"
           >
             <div className="text-[13px] font-semibold">
               {ABOUT[id].name}: {DATASET_LABEL[id]}

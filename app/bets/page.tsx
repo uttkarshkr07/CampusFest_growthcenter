@@ -12,13 +12,13 @@ import { Badge, Button, Card, Caveats, PageHeader, inputCls } from "@/components
 import { fmtDate, inr, num } from "@/lib/format";
 
 const CHIP: Record<Verdict, string> = {
-  scale: "bg-good-soft text-good border-green-200",
-  change: "bg-warn-soft text-warn border-amber-200",
-  stop: "bg-bad-soft text-bad border-red-200",
-  too_early: "bg-slate-100 text-slate-600 border-slate-200",
-  not_enough_data: "bg-slate-100 text-slate-600 border-slate-200",
-  not_applicable: "bg-white text-muted border-line",
-  tracking: "bg-brand-soft text-brand border-blue-200",
+  scale: "bg-good-soft text-good border-good/30",
+  change: "bg-warn-soft text-warn border-warn/30",
+  stop: "bg-bad-soft text-bad border-bad/30",
+  too_early: "bg-subtle-2 text-muted border-line",
+  not_enough_data: "bg-subtle-2 text-muted border-line",
+  not_applicable: "bg-panel text-muted border-line",
+  tracking: "bg-brand-soft text-brand border-brand/30",
 };
 const VerdictChip = ({ v }: { v: Verdict }) => <span className={`inline-flex whitespace-nowrap rounded border px-1.5 py-0.5 text-[11px] font-semibold uppercase ${CHIP[v]}`}>{VERDICT_LABEL[v]}</span>;
 
@@ -81,7 +81,7 @@ export default function BetsPage() {
         <ChampionshipBoard />
       ) : (
         <>
-          {!v.hasBetData && <p className="rounded-md border border-line bg-white px-3 py-2 text-[13px]">The original 2025 data has no squads, payments, passes, seats, waitlist offers, contingents or bet records. Only the whole-plan checks, and two proxies, can be answered. Switch to the simulated run to see the bets.</p>}
+          {!v.hasBetData && <p className="rounded-md border border-line bg-panel px-3 py-2 text-[13px]">The original 2025 data has no squads, payments, passes, seats, waitlist offers, contingents or bet records. Only the whole-plan checks, and two proxies, can be answered. Switch to the simulated run to see the bets.</p>}
           {v.hasBetData && !mayEdit && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">Thresholds are view only for you. {whoCanEdit("bet_thresholds")}</p>}
           {focus && ![...v.bets, v.plan].some((b) => b.bet_id === focus) && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">There is no bet {focus}.</p>}
           <Spend s={v.spend} hasBetData={v.hasBetData} />
@@ -98,7 +98,7 @@ export default function BetsPage() {
 
 function Spend({ s, hasBetData }: { s: TrackerValue["spend"]; hasBetData: boolean }) {
   return (
-    <p className={`rounded-md px-3 py-2 text-[13px] ${s.over ? "bg-bad-soft text-bad" : "border border-line bg-white"}`}>
+    <p className={`rounded-md px-3 py-2 text-[13px] ${s.over ? "bg-bad-soft text-bad" : "border border-line bg-panel"}`}>
       Media spend to date {inr(s.media)}
       {hasBetData ? ` plus bet spend ${inr(s.bets)} = ${inr(s.total)}, ${s.over ? "OVER" : "within"} the cap of ${inr(s.cap)}.` : ". No bet spend exists in this dataset."}
     </p>
@@ -173,7 +173,7 @@ function Kpi({ card, k, mayEdit, make }: { card: BetCard; k: KpiResult; mayEdit:
       )}
       {k.note && <div className="mt-1 text-[12px] text-muted">{k.note.replace(/\d{4}-\d{2}-\d{2}/g, (d) => fmtDate(d))}</div>}
       {k.action && (
-        <div className="mt-1 rounded-md bg-slate-50 px-2.5 py-1.5 text-[12px]">
+        <div className="mt-1 rounded-md bg-subtle px-2.5 py-1.5 text-[12px]">
           <span className="font-semibold">Action:</span> {k.action}
         </div>
       )}

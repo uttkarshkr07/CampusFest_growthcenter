@@ -73,7 +73,7 @@ export default function ChampionshipBoard({ focus = null }: { focus?: string | n
                       <td className="tabular px-2 py-1.5 text-right">{s.tier || "none"}</td>
                     </tr>
                     {open === s.college_id && (
-                      <tr className="border-b border-line/70 bg-slate-50">
+                      <tr className="border-b border-line/70 bg-subtle">
                         <td />
                         <td colSpan={6} className="px-2 py-2 text-[12px]">
                           {!s.results.length ? (
@@ -103,7 +103,7 @@ export default function ChampionshipBoard({ focus = null }: { focus?: string | n
 }
 
 const Figure = ({ label, value, note }: { label: string; value: string; note: string }) => (
-  <div className="rounded-lg border border-line bg-white px-4 py-3">
+  <div className="rounded-lg border border-line bg-panel px-4 py-3">
     <div className="text-[12px] text-muted">{label}</div>
     <div className="text-[16px] font-semibold">{value}</div>
     <div className="text-[12px] text-muted">{note}</div>

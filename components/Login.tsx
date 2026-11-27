@@ -17,9 +17,9 @@ export default function Login() {
   const { signIn, busyKey, error } = useAuth();
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas p-5">
-      <div className="w-full max-w-2xl rounded-xl border border-line bg-white p-6 shadow-sm">
+      <div className="w-full max-w-2xl rounded-xl border border-line bg-panel p-6 shadow-sm">
         <h1 className="text-[18px] font-bold">CampusFest Growth Center</h1>
-        <p className="mt-1 text-[13px] text-slate-700">Choose who you are. Everyone can view everything; what you can change depends on the account. Chats with the copilot are kept per account.</p>
+        <p className="mt-1 text-[13px] text-ink-2">Choose who you are. Everyone can view everything; what you can change depends on the account. Chats with the copilot are kept per account.</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {ACCOUNTS.map((a) => (
             <button
@@ -33,7 +33,7 @@ export default function Login() {
                 {busyKey === a.key && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               </div>
               <div className="text-[12px] text-muted">{a.reviewer ? "For graders" : `Team: ${a.teams.join(", ")}`}</div>
-              <div className="mt-1 text-[12px] text-slate-700">{canDo(a)}</div>
+              <div className="mt-1 text-[12px] text-ink-2">{canDo(a)}</div>
             </button>
           ))}
         </div>

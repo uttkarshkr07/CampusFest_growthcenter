@@ -390,6 +390,84 @@
   "description": "Event dates, history window and every target version."
  },
  {
+  "name": "betStatus",
+  "description": "The five growth bets (B1 to B5) and the whole plan (PLAN): each bet's KPIs (K01 to K22) with verdict (Scale, Change, Stop, Too early, Not enough data, Not applicable, Tracking), value, check date, threshold action and bet spend vs budget. Pass betId for one bet in detail, or kpiId for one KPI with its numbers, threshold and breakdown (for example per college). Use for any question about bets, KPIs, verdicts or checkpoints.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "betId": {
+     "type": "string"
+    },
+    "kpiId": {
+     "type": "string"
+    }
+   }
+  }
+ },
+ {
+  "name": "bookings",
+  "description": "The fest program by venue and session: seats offered, seats booked, waitlist, exchange offers claimed / expired / open, door attendance and people turned away, venue fill by day, sold-out and overbooked sessions. Filter by venueId, eventId, day (YYYY-MM-DD) or bookableOnly.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "venueId": {
+     "type": "string"
+    },
+    "eventId": {
+     "type": "string"
+    },
+    "day": {
+     "type": "string"
+    },
+    "bookableOnly": {
+     "type": "boolean"
+    }
+   }
+  }
+ },
+ {
+  "name": "championship",
+  "description": "College Championship standings (points, rank, attendees, tier), the Contingent Trophy, results recorded and point mismatches. Pass collegeId for one college with its contingents and tiers reached; top for how many rows (default 10).",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "collegeId": {
+     "type": "string"
+    },
+    "top": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 30
+    }
+   }
+  }
+ },
+ {
+  "name": "payments",
+  "description": "Money from passes: payments by kind (pre-booking, lock-in, single, gate, cashback, wallet credit, exam refunds), passes by state (pre-booked, locked in, cancelled or released, valid, hostel), exam-clash insurance claims and approved refunds, and the pre-book, lock-in, claims and givebacks KPIs.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    }
+   }
+  }
+ },
+ {
   "name": "sponsor",
   "description": "Sponsor acquisition records, which are separate from the attendee data: brands, contacts, outreach, qualification, partnership opportunities and links to attendee campaigns. Reports: overview (goals, brand counts, opportunity stages, reported value); campaigns (results per sponsor campaign); opportunities (latest state of each; filter by stage or search); brands (search, or filter by qualification); brand (one brand's full history; search = brand ID or exact name); activations (sponsor links to attendee campaigns). Reported sponsorship value is not proof of payment.",
   "parameters": {
@@ -504,7 +582,7 @@
  },
  {
   "name": "openInApp",
-  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); ticket = tickets between teams: raise, comment, accept, decline or edit (id = ticket id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen; venue = a venue on the campus map: its sessions and seats (id = venue id); event = a session on the campus map (id = program event id); bet = the bet tracker: KPIs, verdicts and thresholds (id = bet id B1 to B5, or PLAN); college = the College Championship board (id = college id).",
+  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); ticket = tickets between teams: raise, comment, accept, decline or edit (id = ticket id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; data_quality = the data-quality list: records left out, read differently or worth a check; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen; venue = a venue on the campus map: its sessions and seats (id = venue id); event = a session on the campus map (id = program event id); bet = the bet tracker: KPIs, verdicts and thresholds (id = bet id B1 to B5, or PLAN); event_rules = the Event List: an event's rules, sessions and seats (id = event id such as group-dance); college = the College Championship board (id = college id).",
   "parameters": {
    "type": "object",
    "properties": {
@@ -516,6 +594,7 @@
       "ticket",
       "daily_marketing",
       "targets",
+      "data_quality",
       "checkins",
       "settings",
       "person",
@@ -524,6 +603,7 @@
       "venue",
       "event",
       "bet",
+      "event_rules",
       "college"
      ]
     },

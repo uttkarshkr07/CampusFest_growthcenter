@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { AUTH_ON } from "@/lib/auth/config";
 import { accessToken, useAuth } from "@/lib/auth/store";
-import { DATASET_LABEL, type DatasetId } from "@/lib/datasets";
+import { ANSWER_LABEL, DATASET_LABEL, type DatasetId } from "@/lib/datasets";
 import { buildSummary, executeSponsorTool, executeToolAsOf } from "@/lib/engine";
 import { useSponsor } from "@/lib/sponsor/store";
 import { useStore } from "@/lib/store";
@@ -35,6 +35,11 @@ interface ChatState {
   /** the account and dataset whose chats are listed */
   historyKey: string | null;
   setOpen: (open: boolean) => void;
+  /** a question waiting in the input box, put there by another screen; never sent automatically */
+  pending: string | null;
+  /** open the panel with this question in the box */
+  prefill: (question: string) => void;
+  takePending: () => string | null;
   /** datasetColumn is false only before the database patch that adds it */
   init: (userKey: string, dataset: DatasetId, datasetColumn: boolean) => Promise<void>;
   /** forget the previous account's chats after signing out */
@@ -74,6 +79,13 @@ export const useChat = create<ChatState>((set, get) => ({
   historyKey: null,
 
   setOpen: (open) => set({ open }),
+  pending: null,
+  prefill: (question) => set({ open: true, pending: question }),
+  takePending: () => {
+    const q = get().pending;
+    if (q != null) set({ pending: null });
+    return q;
+  },
 
   reset: () => {
     storage = null;
@@ -196,6 +208,7 @@ export const useChat = create<ChatState>((set, get) => ({
           summary: buildSummary(data, asOf),
           context: { today: asOf, dataset: dataset === "simulated" ? `${DATASET_LABEL.simulated} (a made-up simulation, not real results)` : DATASET_LABEL.original, ...(me ? { signedInUser: { name: me.name, teams: me.teams, isReviewer: me.isReviewer } } : {}) },
           history,
+          datasetLabel: ANSWER_LABEL[dataset],
           callModel: async (req) => callModel(req, await accessToken()),
           // read the store again so a data edit made mid-answer is used
           runTool: (name, args) =>

@@ -99,7 +99,7 @@ export default function CampaignsPage() {
                 const f = flagBy.get(r.campaign_id);
                 const sp = sponsorBy.get(r.campaign_id);
                 return (
-                  <tr key={r.campaign_id} id={`campaign-${r.campaign_id}`} className="border-b border-line/70 hover:bg-slate-50/60">
+                  <tr key={r.campaign_id} id={`campaign-${r.campaign_id}`} className="border-b border-line/70 hover:bg-subtle">
                     <td className="px-2 py-2">{f && <FlagChip level={f.level} title={f.reason} />}</td>
                     <td className="px-2 py-2">
                       <div className="font-medium">
@@ -108,7 +108,7 @@ export default function CampaignsPage() {
                       <div className="text-[11px] text-muted">
                         {r.channel ?? "no channel"} · {r.owner_name ?? "no owner"}
                         {sp && (
-                          <span title={sp.activation_note ?? ""} className="ml-1 rounded bg-violet-50 px-1 text-violet-700">
+                          <span title={sp.activation_note ?? ""} className="ml-1 rounded bg-app-soft px-1 text-app">
                             sponsor: {sp.brand_name}
                           </span>
                         )}
@@ -116,7 +116,7 @@ export default function CampaignsPage() {
                       </div>
                     </td>
                     <td className="px-2 py-2">
-                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={r.app_status} disabled={!mayEdit} onChange={(e) => upsertPlan(r.campaign_id, { app_status: e.target.value as "active" })}>
+                      <select className="rounded border border-line bg-panel px-1.5 py-0.5 text-[12px]" value={r.app_status} disabled={!mayEdit} onChange={(e) => upsertPlan(r.campaign_id, { app_status: e.target.value as "active" })}>
                         <option value="planned">planned</option>
                         <option value="active">active</option>
                         <option value="paused">paused</option>
@@ -168,7 +168,7 @@ export default function CampaignsPage() {
             <li key={f.campaign_id} className="flex items-start gap-2">
               <FlagChip level={f.level} />
               <div>
-                <span className="font-medium">{f.campaign_name}:</span> <span className="text-slate-700">{f.reason}</span>
+                <span className="font-medium">{f.campaign_name}:</span> <span className="text-ink-2">{f.reason}</span>
               </div>
             </li>
           ))}
@@ -200,7 +200,7 @@ function BudgetCell({ value, used, locked, onSave }: { value: number | null; use
       />
     );
   return (
-    <button className="tabular rounded px-1 text-right hover:bg-slate-100" onClick={() => setEdit(true)} disabled={locked} title={locked ? whoCanEdit("campaign_plan") : "Click to edit"}>
+    <button className="tabular rounded px-1 text-right hover:bg-subtle-2" onClick={() => setEdit(true)} disabled={locked} title={locked ? whoCanEdit("campaign_plan") : "Click to edit"}>
       {value == null ? <span className="text-muted">{locked ? "none" : "set"}</span> : inr(value)}
       {used != null && <div className={`text-[11px] ${used > 100 ? "text-bad" : "text-muted"}`}>{pct(used, 0)} used</div>}
     </button>

@@ -30,7 +30,7 @@ export default function CopilotPage() {
   };
 
   return (
-    <div className={`flex ${dataset === "simulated" ? "h-[calc(100vh-8.25rem)]" : "h-[calc(100vh-6rem)]"} min-h-96 overflow-hidden rounded-lg border border-line bg-white`}>
+    <div className={`flex ${dataset === "simulated" ? "h-[calc(100vh-8.25rem)]" : "h-[calc(100vh-6rem)]"} min-h-96 overflow-hidden rounded-lg border border-line bg-panel`}>
       <aside className="flex w-64 shrink-0 flex-col border-r border-line">
         <div className="border-b border-line p-2">
           <Button variant="primary" className="w-full justify-center" onClick={newChat} disabled={busy}>
@@ -40,7 +40,7 @@ export default function CopilotPage() {
         <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
           {sessions.length === 0 && <li className="px-2 py-1 text-[12px] text-muted">No saved chats yet for the {DATASET_LABEL[dataset]}.</li>}
           {sessions.map((s) => (
-            <li key={s.id} className={`group flex items-start gap-1 rounded-md px-2 py-1.5 ${s.id === currentId ? "bg-brand-soft" : "hover:bg-slate-50"}`}>
+            <li key={s.id} className={`group flex items-start gap-1 rounded-md px-2 py-1.5 ${s.id === currentId ? "bg-brand-soft" : "hover:bg-subtle"}`}>
               {renaming?.id === s.id ? (
                 <input
                   autoFocus
@@ -80,7 +80,7 @@ export default function CopilotPage() {
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col bg-canvas">
-        <header className="flex items-center gap-2 border-b border-line bg-white px-4 py-2">
+        <header className="flex items-center gap-2 border-b border-line bg-panel px-4 py-2">
           <MascotFace />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[14px] font-semibold">{sessions.find((s) => s.id === currentId)?.title ?? "New chat"}</div>

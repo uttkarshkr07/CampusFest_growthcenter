@@ -17,6 +17,12 @@ export const DATASET_SHORT: Record<DatasetId, string> = {
   simulated: "Simulated run",
 };
 
+/** the first line of every copilot answer */
+export const ANSWER_LABEL: Record<DatasetId, string> = {
+  original: "Original 2025 data",
+  simulated: "SIMULATED run with our bets (made up, not real results)",
+};
+
 const PREFIX = "sim_";
 
 /** the database table that holds `table` for this dataset */

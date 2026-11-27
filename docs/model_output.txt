@@ -1,0 +1,168 @@
+
+=== 2025 baseline [S] ===
+identified 3,625 | registered 2,800 (77.2% of identified) | confirmed external 2,500 | registered attendees 1,925 + walk-ins 125 = 2,050
+registered->attended 68.8% | spend INR 274,000 | INR per attendee 134 | INR per registration 98
+gate/walk-in rate 6.5% | day 1 share of attendees 92.9%
+  C01 Campus Ambassadors: spend 42,000 regs 520 attended 390 show-up 75.0% INR/attendee 108
+  C02 Paid Social: spend 93,000 regs 680 attended 340 show-up 50.0% INR/attendee 274
+  C03 Creator Partners: spend 59,000 regs 350 attended 175 show-up 50.0% INR/attendee 337
+  C04 College Partnerships: spend 31,000 regs 450 attended 385 show-up 85.6% INR/attendee 81
+  C05 Student Referrals: spend 19,000 regs 350 attended 275 show-up 78.6% INR/attendee 69
+  C06 Organic Search: spend 14,000 regs 250 attended 195 show-up 78.0% INR/attendee 72
+  C07 Community Groups: spend 16,000 regs 200 attended 165 show-up 82.5% INR/attendee 97
+
+=== Budget (INR) [cap S, split A] ===
+B1 Contingents: 220,000  visits to 100 colleges x INR 1,500 150,000; two trophies, head kits, OD letter printing 70,000
+B3 Two-step payment: 110,000  2,000 wristbands x INR 30 60,000; wallet credit 200 x 100 + 300 x 50 35,000; payment and lock-in messages 15,000
+B2 Squad Pass: 40,000  squad promotion creatives 40,000
+B5 Hackathon: 25,000  fest-side publicity (prizes and ops sponsor funded, SIMULATED) 25,000
+B4 Attendance Exchange: 10,000  claim-window SMS and WhatsApp 10,000
+bet operating total 405,000 | channel media 595,000 | total 1,000,000
+
+=== BASE: registrations ===
+channel media (2.0x marginal above 2025 spend):
+  C01 Campus Ambassadors: INR 140,000 -> regs 1,127 (2.2x 2025) | show-up index 1.09 | INR/actual attendee 200 (individual-route funnel)
+  C02 Paid Social: INR 80,000 -> regs 585 (0.9x 2025) | show-up index 0.73 | INR/actual attendee 330 (individual-route funnel)
+  C03 Creator Partners: INR 40,000 -> regs 237 (0.7x 2025) | show-up index 0.73 | INR/actual attendee 406 (individual-route funnel)
+  C05 Student Referrals: INR 135,000 -> regs 1,418 (4.1x 2025) | show-up index 1.14 | INR/actual attendee 146 (individual-route funnel)
+  C06 Organic Search: INR 60,000 -> regs 661 (2.6x 2025) | show-up index 1.13 | INR/actual attendee 140 (individual-route funnel)
+  C07 Community Groups: INR 140,000 -> regs 975 (4.9x 2025) | show-up index 1.20 | INR/actual attendee 210 (individual-route funnel)
+a) paid+owned channels 5,003 | b) contingents 70 colleges x 100 = 7,000 | c) organic lineup pull 3,000 | TOTAL 15,003
+share from contingents 46.7% | from organic 20.0% | both 66.7%
+identified people needed for a)+c) at 2025 identified->registered: 10,361
+
+=== BASE: funnel by route (squads 400 of 5) ===
+  individual: registered 6,002 -> pre-booked 4,393 (73.2%) -> locked-in 3,734 (85.0%) -> attended 3,361 (90.0% show-up); registered->attended 56.0%
+  squad: registered 2,001 -> pre-booked 1,674 (83.6%) -> locked-in 1,473 (88.0%) -> attended 1,384 (94.0% show-up); registered->attended 69.2%
+  contingent: registered 7,000 -> pre-booked 5,950 (85.0%) -> locked-in 5,474 (92.0%) -> attended 5,036 (92.0% show-up); registered->attended 71.9%
+  all routes: registered 15,003 -> pre-booked 12,017 -> locked-in 10,681 -> attended 9,781
+  + gate buyers/walk-ins 635 + hackathon net new 105 = demand 10,521
+  pass cap 13,000 does not bind | exchange refill 0
+  >>> BASE ACTUAL ATTENDEES 10,521 (5.1x 2025) | of registrations 70.1%
+  marketing+ops INR per actual attendee 95 (2025: 134)
+
+=== STRETCH: registrations ===
+channel media (1.5x marginal above 2025 spend):
+  C01 Campus Ambassadors: INR 140,000 -> regs 1,329 (2.6x 2025) | show-up index 1.09 | INR/actual attendee 149 (individual-route funnel)
+  C02 Paid Social: INR 80,000 -> regs 585 (0.9x 2025) | show-up index 0.73 | INR/actual attendee 291 (individual-route funnel)
+  C03 Creator Partners: INR 40,000 -> regs 237 (0.7x 2025) | show-up index 0.73 | INR/actual attendee 358 (individual-route funnel)
+  C05 Student Referrals: INR 135,000 -> regs 1,775 (5.1x 2025) | show-up index 1.14 | INR/actual attendee 103 (individual-route funnel)
+  C06 Organic Search: INR 60,000 -> regs 798 (3.2x 2025) | show-up index 1.13 | INR/actual attendee 103 (individual-route funnel)
+  C07 Community Groups: INR 140,000 -> regs 1,233 (6.2x 2025) | show-up index 1.20 | INR/actual attendee 146 (individual-route funnel)
+a) paid+owned channels 5,957 | b) contingents 90 colleges x 120 = 10,800 | c) organic lineup pull 3,250 | TOTAL 20,007
+share from contingents 54.0% | from organic 16.2% | both 70.2%
+identified people needed for a)+c) at 2025 identified->registered: 11,919
+
+=== STRETCH: funnel by route (squads 552 of 5) ===
+  individual: registered 6,445 -> pre-booked 5,098 (79.1%) -> locked-in 4,486 (88.0%) -> attended 4,127 (92.0% show-up); registered->attended 64.0%
+  squad: registered 2,762 -> pre-booked 2,476 (89.7%) -> locked-in 2,229 (90.0%) -> attended 2,117 (95.0% show-up); registered->attended 76.7%
+  contingent: registered 10,800 -> pre-booked 9,504 (88.0%) -> locked-in 8,839 (93.0%) -> attended 8,220 (93.0% show-up); registered->attended 76.1%
+  all routes: registered 20,007 -> pre-booked 17,078 -> locked-in 15,554 -> attended 14,465
+  + gate buyers/walk-ins 939 + hackathon net new 120 = demand 15,524
+  pass cap 13,000 BINDS | exchange refill 234
+  >>> STRETCH ACTUAL ATTENDEES 12,844 (6.3x 2025) | of registrations 64.2%
+  marketing+ops INR per actual attendee 78 (2025: 134)
+
+=== Bridge from 2025 to target (sequential, in bet rank order) ===
+base: 2025 actual 2,050 -> scale-up without bets (channels + organic + anyway-contingent) +3,218 = 5,268
+   + B1 Contingents: +4,000 -> 9,268 (before pass cap)
+   + B2 Squad Pass: +377 -> 9,645 (before pass cap)
+   + B3 Two-step payment: +772 -> 10,416 (before pass cap)
+   + B5 Hackathon: +105 -> 10,521 (before pass cap)
+   pass cap 13,000: +0 | exam-claim voided passes when sold out: +0 | + B4 exchange refill: +0 | = 10,521
+   leave-one-out (no cap): B1 4,320, B3 772, B2 407, B5 105, B4 0
+   gross sum 5,604 | overlap/interaction removed +350 | net from bets (no cap) 5,253
+   net from bets after cap 5,253
+   contingent registrants assumed to sign up anyway (not credited to B1): 1,750
+stretch: 2025 actual 2,050 -> scale-up without bets (channels + organic + anyway-contingent) +5,125 = 7,175
+   + B1 Contingents: +6,284 -> 13,459 (before pass cap)
+   + B2 Squad Pass: +545 -> 14,004 (before pass cap)
+   + B3 Two-step payment: +1,400 -> 15,404 (before pass cap)
+   + B5 Hackathon: +120 -> 15,524 (before pass cap)
+   pass cap 13,000: -2,524 | exam-claim voided passes when sold out: -390 | + B4 exchange refill: +234 | = 12,844
+   leave-one-out (no cap): B1 6,912, B3 1,400, B2 599, B5 120, B4 0
+   gross sum 9,032 | overlap/interaction removed +683 | net from bets (no cap) 8,349
+   net from bets after cap 5,669
+   contingent registrants assumed to sign up anyway (not credited to B1): 2,700
+
+=== Cost per incremental attendee by bet (operating cost only, base leave-one-out) ===
+  B1 Contingents: INR 220,000 / 4,320 = INR 51
+  B3 Two-step payment: INR 110,000 / 772 = INR 143
+  B2 Squad Pass: INR 40,000 / 407 = INR 98
+  B5 Hackathon: INR 25,000 / 105 = INR 238
+  B4 Attendance Exchange: INR 10,000 / 0 = no distinct attendees in base
+  base paid+owned channels blended: INR 595,000 / 3,061 = INR 194 per actual attendee (individual-route funnel)
+  stretch paid+owned channels blended: INR 595,000 / 4,178 = INR 142 per actual attendee (individual-route funnel)
+Contingent college funnel [A]: 100 colleges visited -> 70 signed (base) / 90 signed (stretch, aggressive); universe: DU 91 colleges + GGSIPU 107 institutes [S] = 198
+
+=== Stress test on the contingent line ===
+base contingent attendees 5,036; bought at 2025 C04 INR 81 x 2.0 marginal = INR 162 each = INR 815,845 (does not fit in INR 1,000,000); the plan spends INR 220,000 because heads recruit and tier discounts come from pass revenue [A]
+
+=== Opportunity cost of bet spend ===
+INR 405,000 in media instead would buy about 1,958 regs / 1,117 attendees (base); bets add 5,253 (base)
+
+=== ICE (Impact from base leave-one-out; Confidence and Ease are judged scores [A]) ===
+  B1 Contingents: impact 10.0 x confidence 7 x ease 4 = 280
+  B3 Two-step payment: impact 2.6 x confidence 4 x ease 5 = 52
+  B2 Squad Pass: impact 1.8 x confidence 5 x ease 8 = 74
+  B5 Hackathon: impact 1.2 x confidence 4 x ease 3 = 15
+  B4 Attendance Exchange: impact 1.0 x confidence 4 x ease 5 = 20
+rank: B1 Contingents > B2 Squad Pass > B3 Two-step payment > B4 Attendance Exchange > B5 Hackathon
+  two-step uplift 8.0%: B3 adds 772, ICE 52 vs Squad 74
+  two-step uplift 10.0%: B3 adds 947, ICE 59 vs Squad 74
+  two-step uplift 12.0%: B3 adds 1,116, ICE 67 vs Squad 74
+  two-step uplift 15.0%: B3 adds 1,359, ICE 77 vs Squad 74
+  two-step uplift 20.0%: B3 adds 1,736, ICE 92 vs Squad 74
+
+=== Capacity ===
+safe external per night = 20,000 x 90.0% - 5,000 = 13,000; pass cap 13,000
+  base: day 1 external about 9,777, on ground with internal 14,777 of 20,000
+  stretch: day 1 external about 11,936, on ground with internal 16,936 of 20,000
+stretch unconstrained demand 15,524; if cap were 15,000 (100% ground) attendees 14,820
+P1 [S]: standup 4 shows, 3,200 seats (1,600/day); all bookable 31 sessions, 16,350 seats; base attendees per standup seat 3.3
+
+=== Revenue effects (from pass revenue, NOT marketing budget) [A] ===
+average pass INR 650 | average insurable amount INR 521
+  base: indicative gross pass revenue INR 6,838,827 | squad cashback 125,977 | contingent cheer discount 113,750 | insurance claims 320, reserve 166,941 | total 5.9% of gross
+  stretch: indicative gross pass revenue INR 8,348,600 | squad cashback 192,663 | contingent cheer discount 365,625 | insurance claims 467, reserve 243,104 | total 9.6% of gross
+
+=== Sensitivity on base (attendees, cap applied) ===
+  lock-in and show-up low (-10 / -8 pts): 8,542
+  lock-in and show-up mid (+0 / +0 pts): 10,521
+  lock-in and show-up high (+5 / +3 pts): 11,467
+  pre-book -15 pts: 8,532
+  pre-book -30 pts: 6,542
+  40 colleges: regs 12,003, attendees 8,223
+  55 colleges: regs 13,503, attendees 9,372
+  70 colleges: regs 15,003, attendees 10,521
+  85 colleges: regs 16,503, attendees 11,671
+  organic pull zero: regs 12,003, attendees 8,710
+  floor (40 colleges, no organic): regs 9,003, attendees 6,411
+
+=== Audience segments ===
+  1 Delhi regular-mode college students: size 478,736 [S] | base regs 9,902 (2.1% of segment) | base attendees about 6,944
+  2 NCR outside Delhi (Noida, Gurugram, Ghaziabad, Faridabad): size 200,000 [A] | base regs 3,601 (1.8% of segment) | base attendees about 2,525
+  3 Health x AI (medical, nursing, pharmacy, AI builders; inside 1 and 2): size 40,000 [A] | base regs 750 (1.9% of segment) | base attendees about 526
+  4 Outstation competing contingents: size 10,000 [A] | base regs 750 (7.5% of segment) | base attendees about 526
+Delhi higher-education enrolment all modes 1,145,390, regular 478,736
+core pool 1+2 = 678,736; base registrations need 2.2% of it
+
+=== Test power (two arms, 80% power, 5% two-sided): smallest detectable gap ===
+  baseline 70.0%, 200 per arm: 12.8 pts
+  baseline 70.0%, 400 per arm: 9.1 pts
+  baseline 70.0%, 800 per arm: 6.4 pts
+  baseline 70.0%, 1500 per arm: 4.7 pts
+
+=== Checkpoint pace values (base) ===
+contingent regs base 7,000; half = 3,500
+squads base 400; half = 200
+locked-in base 10,681; pre-booked base 12,017; lock/pre-book 88.9%; pre-book/registered 80.1%
+
+=== Fixed inputs quoted on slides ===
+Spring Fest [S: user's records]: footfall about 30,000 over 3 days | registrations about 25,000 excl. about 10,000 own-college | pass about INR 2,300 | contingents 50-200
+2025 show-up evidence [S: original attendee dataset, recomputed 27 Nov]: nurture email opened or clicked 69% vs no email or question 68% | asked a question 79% | registered in last 4 weeks 72-73% (weekly 69-74%, 72.8% pooled) vs 6-10 weeks out 62-64% (62.7% pooled) | 575 confirmed no-shows, 60 reached the gate (denied or pending) | 88 waitlisted, 0 attended
+Delhi NCR metro network 393 km [S: PIB, Dec 2024] | college universe 91 DU colleges + 107 GGSIPU institutes = 198 [S]
+insurable amounts INR 401 / 1,201 | Championship total points 1,630 [S: P1] | hackathon support INR 150,000, prizes INR 100,000 (SIMULATED, not received)
+
+=== Slide 3 thresholds [A] ===
+K03 contingent regs by 15 Mar: scale >= 3,500 (50% of 7,000), change 2,100 to 3,499, stop < 2,100 (30%)

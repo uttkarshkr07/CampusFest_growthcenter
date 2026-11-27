@@ -70,7 +70,7 @@ export default function CampusMap({ venues, day, selected, colour, onSelect }: {
       const [first, second] = label.querySelectorAll("text");
       if (rect) {
         paint(rect, "fill", step?.box ?? null);
-        paint(rect, "stroke", selected === v.venue_id ? "#3B5BDB" : null);
+        paint(rect, "stroke", selected === v.venue_id ? "#0F5BFF" : null);
         paint(rect, "stroke-width", selected === v.venue_id ? "8" : null);
       }
       if (first) paint(first, "fill", step?.ink ?? null);

@@ -590,15 +590,21 @@ export const KPIS: Record<string, KpiDef> = {
   },
   K20: {
     id: "K20", name: "Projected attendees", timing: "leading", unit: "count", needs: ["passes"], rolling: true, original: "yes",
-    formula: "Per route: locked-in x show-up + pre-booked x lock-in x show-up + unpaid x pre-book x lock-in x show-up (unlocked terms are zero after 2 Apr), plus 6.5% gate buyers and new hackathon participants, capped at 13,000.",
+    formula: "Per route: locked-in x show-up + pre-booked x lock-in x show-up + unpaid x pre-book x lock-in x show-up (unlocked terms are zero after 2 Apr), plus 6.5% gate buyers and new hackathon participants, capped at 13,000. A cancelled registration with no live pass is left out.",
     measure: (c) => {
       const { cases, replaced } = plannedRates(c.data);
       const open = c.day <= PLAN.lockDeadline;
       const counts = Object.fromEntries(ROUTES.map((r) => [r, { locked: 0, booked: 0, unpaid: 0 }])) as Record<Route, { locked: number; booked: number; unpaid: number }>;
+      let cancelled = 0;
       for (const [person, reg] of c.regs) {
         const own = passesOf(c, person);
         const live = own.filter(isLive);
         if (own.length && !live.length) continue; // cancelled or voided: not expected
+        // with no pass, the registration status at this date is the only sign of a cancellation
+        if (!live.length && word(c.s.statusOf(reg.registration_id, c.ms)?.status) === "cancelled") {
+          cancelled++;
+          continue;
+        }
         const at = counts[routeOf(reg)];
         if (live.some((p) => isSet(p.locked_in_at))) at.locked++;
         else if (live.length) at.booked++;
@@ -618,6 +624,7 @@ export const KPIS: Record<string, KpiDef> = {
       const numbers = [
         ...ROUTES.map((r) => `${r}: ${n(counts[r].locked)} locked in, ${n(counts[r].booked)} pre-booked only, ${n(counts[r].unpaid)} registered and unpaid.`),
         `Projection ${n(mid)} (low ${n(low)}, high ${n(high)}) against the base target ${n(PLAN.attendeesBase)}. Includes ${n(newHack)} new hackathon participants.`,
+        ...(cancelled ? [`Left out: ${n(cancelled)} cancelled registration(s) with no pass.`] : []),
         ...(replaced.length ? [`Settings replace these planned rates: ${replaced.join(", ")}.`] : []),
       ];
       if (eventStarted(c)) numbers.push(`Actual attendees so far: ${n(c.s.attendees.size)}.`);
@@ -650,13 +657,14 @@ export const KPIS: Record<string, KpiDef> = {
   },
   K22: {
     id: "K22", name: "Revenue givebacks", timing: "leading", unit: "pct", needs: ["payments", "passes"], rolling: true,
-    formula: "(cashback + contingent discount + wallet credit + exam refunds) / gross pass payments.",
+    formula: "(cashback + contingent discount from lock-in + wallet credit + exam refunds) / gross pass payments. A reversal is a negative amount and cancels the payment it reverses.",
     measure: (c) => {
-      const sumOf = (kinds: string[]) => c.b.payments.filter((p) => kinds.includes(word(p.kind))).reduce((a, p) => a + Math.abs(numberOf(p.amount_inr)), 0);
+      const sumOf = (kinds: string[]) => c.b.payments.filter((p) => kinds.includes(word(p.kind))).reduce((a, p) => a + numberOf(p.amount_inr), 0);
       const grossKinds = ["booking", "lock", "full", "gate"];
       const gross = sumOf(grossKinds);
       const paidPasses = new Set(c.b.payments.filter((p) => grossKinds.includes(word(p.kind))).map((p) => text(p.pass_id)));
-      const discount = c.b.passes.filter((p) => word(p.discount_type) === "contingent_25" && paidPasses.has(text(p.pass_id))).reduce((a, p) => a + Math.abs(numberOf(p.discount_inr)), 0);
+      // the discount is granted when the pass locks in, not when it is first booked
+      const discount = c.b.passes.filter((p) => word(p.discount_type) === "contingent_25" && isSet(p.locked_in_at)).reduce((a, p) => a + numberOf(p.discount_inr), 0);
       const parts = { cashback: sumOf(["squad_cashback"]), "contingent discount": discount, "wallet credit": sumOf(["wallet_credit"]), "exam refunds": sumOf(["refund_exam"]) };
       const back = Object.values(parts).reduce((a, x) => a + x, 0);
       return {

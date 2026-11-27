@@ -54,11 +54,11 @@ export default function TasksPage() {
         }
       />
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
-        <button onClick={() => setStatus("")} className={`rounded-md px-2.5 py-1 ${status === "" ? "bg-ink text-white" : "border border-line bg-white"}`}>
+        <button onClick={() => setStatus("")} className={`rounded-md px-2.5 py-1 ${status === "" ? "bg-ink text-on-accent" : "border border-line bg-panel"}`}>
           All ({data.tasks.length})
         </button>
         {STATUS.map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={`rounded-md px-2.5 py-1 ${status === s ? "bg-ink text-white" : "border border-line bg-white"}`}>
+          <button key={s} onClick={() => setStatus(s)} className={`rounded-md px-2.5 py-1 ${status === s ? "bg-ink text-on-accent" : "border border-line bg-panel"}`}>
             {LABEL[s]} ({v.byStatus[s] ?? 0})
           </button>
         ))}
@@ -116,7 +116,7 @@ export default function TasksPage() {
                     </td>
                     <td className="px-2 py-2 capitalize">{t.priority}</td>
                     <td className="px-2 py-2">
-                      <select className="rounded border border-line bg-white px-1.5 py-0.5 text-[12px]" value={t.status} disabled={!mine} title={why} onChange={(e) => updateTask(t.id, { status: e.target.value as TaskDraft["status"] })}>
+                      <select className="rounded border border-line bg-panel px-1.5 py-0.5 text-[12px]" value={t.status} disabled={!mine} title={why} onChange={(e) => updateTask(t.id, { status: e.target.value as TaskDraft["status"] })}>
                         {STATUS.map((s) => (
                           <option key={s} value={s}>
                             {LABEL[s]}

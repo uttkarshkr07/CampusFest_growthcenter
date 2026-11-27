@@ -54,7 +54,7 @@ export default function MapPage() {
         right={
           <div className="flex gap-1" role="group" aria-label="Fest day">
             {days.map((d) => (
-              <button key={d} onClick={() => setDay(d)} aria-pressed={d === day} className={`rounded-md px-2.5 py-1.5 text-[13px] font-medium ${d === day ? "bg-brand text-white" : "border border-line bg-white hover:bg-slate-50"}`}>
+              <button key={d} onClick={() => setDay(d)} aria-pressed={d === day} className={`rounded-md px-2.5 py-1.5 text-[13px] font-medium ${d === day ? "bg-brand text-on-accent" : "border border-line bg-panel hover:bg-subtle"}`}>
                 {dayName(d)}
               </button>
             ))}
@@ -63,7 +63,7 @@ export default function MapPage() {
       />
       <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">{PROGRAM_NOTE}</p>
       {missing && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">{focus} is not a venue or session in this program.</p>}
-      {!hasBookings && <p className="rounded-md border border-line bg-white px-3 py-2 text-[13px]">Booking data does not exist in the original 2025 data: no seats booked, waitlists, offers or door scans. Switch to the simulated run to see them.</p>}
+      {!hasBookings && <p className="rounded-md border border-line bg-panel px-3 py-2 text-[13px]">Booking data does not exist in the original 2025 data: no seats booked, waitlists, offers or door scans. Switch to the simulated run to see them.</p>}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
         <div className="space-y-3">
@@ -74,7 +74,7 @@ export default function MapPage() {
                 <span className="font-medium">Seats booked on {dayName(day)}:</span>
                 {FILL_STEPS.map((s) => (
                   <span key={s.min} className="flex items-center gap-1.5">
-                    <span className="h-3 w-3 rounded-sm border border-slate-400" style={{ background: s.box }} /> {s.label}
+                    <span className="h-3 w-3 rounded-sm border border-line-strong" style={{ background: s.box }} /> {s.label}
                   </span>
                 ))}
                 <span className="text-muted">Dark label: nothing to book that day.</span>
@@ -87,8 +87,8 @@ export default function MapPage() {
               {venues.map((v) => {
                 const fill = hasBookings ? v.fillByDay[day] : undefined;
                 return (
-                  <button key={v.venue_id} onClick={() => setSelected(v.venue_id)} aria-pressed={selected === v.venue_id} className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] ${selected === v.venue_id ? "border-brand bg-brand-soft font-semibold" : "border-line hover:bg-slate-50"}`}>
-                    {fill && <span className="h-2.5 w-2.5 rounded-sm border border-slate-400" style={{ background: fillStep(fill.fill).box }} />}
+                  <button key={v.venue_id} onClick={() => setSelected(v.venue_id)} aria-pressed={selected === v.venue_id} className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] ${selected === v.venue_id ? "border-brand bg-brand-soft font-semibold" : "border-line hover:bg-subtle"}`}>
+                    {fill && <span className="h-2.5 w-2.5 rounded-sm border border-line-strong" style={{ background: fillStep(fill.fill).box }} />}
                     {v.name}
                     <span className="text-muted">{v.sessions.filter((s) => s.day === day).length || "no"} session(s)</span>
                   </button>
@@ -117,7 +117,7 @@ function VenuePanel({ venue, day, hasBookings }: { venue: VenueView; day: string
       </div>
       {venue.notes && <div className="mt-1 text-[12px] text-muted">{venue.notes}</div>}
       {hasBookings && fill && (
-        <div className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-[12px]">
+        <div className="mt-2 rounded-md bg-subtle px-2.5 py-1.5 text-[12px]">
           {dayName(day)}: {num(fill.booked)} of {num(fill.seats)} bookable seats booked ({fill.fill}%).
         </div>
       )}

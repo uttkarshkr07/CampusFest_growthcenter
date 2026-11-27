@@ -1,0 +1,63 @@
+[
+ {
+  "id": "edit_request",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Change the paid social campaign's budget to INR 50,000.",
+  "seconds": 1.62,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- I cannot change campaigns directly.\n- You can change the paid social campaign's budget in the app.\n\n**Next step**\n- Click the button below to open the Paid Social campaign and update its budget.\n\n*(Open in App)*",
+  "usage": [
+   {
+    "in": 7454,
+    "out": 55,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_hindsight",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Which college will win the Championship and how many people will finally attend?",
+  "seconds": 4.912,
+  "requests": 3,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "championship",
+    "args": {
+     "top": 1
+    },
+    "ok": true
+   },
+   {
+    "name": "projection",
+    "args": {},
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- No competition result is recorded yet, so the data cannot show which college will win the Championship.\n- The mid-case projection for final attendance is 2257 people (with a low of 2168 and a high of 2329).\n\n**Evidence**\n- Championship standings show 0 points awarded and 0 results count at this date.\n- The projection is built on 1786 confirmed registrations now, a show-up assumption of 0.9, and 650 walk-ins.\n\n**Assumptions**\n- ASSUMPTION: show-up rates and walk-ins come from Settings, not observed data. \n- Registrations still to come before the event are not included, so this is a floor if acquisition continues.\n- Points are the recorded points in competition results up to the selected date.\n\n**What the data can't tell**\n- The data cannot tell who will win the Championship because no competition results are recorded yet.\n- Actual attendance cannot be known before the event takes place. \n- To start collecting missing data, the team must record competition results as events happen and capture check-ins during the festival.\n\n**Next step**\n- Suggest running competition events and recording results to update the Championship standings.",
+  "usage": [
+   {
+    "in": 8002,
+    "out": 13,
+    "finish": "STOP"
+   },
+   {
+    "in": 8272,
+    "out": 8,
+    "finish": "STOP"
+   },
+   {
+    "in": 8559,
+    "out": 275,
+    "finish": "STOP"
+   }
+  ]
+ }
+]

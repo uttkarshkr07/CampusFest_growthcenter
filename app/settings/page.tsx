@@ -29,7 +29,7 @@ export default function SettingsPage() {
         </div>
       </Card>
       <Card title="Fixed rules (not editable)">
-        <ul className="list-disc space-y-1 pl-5 text-[13px] text-slate-700">
+        <ul className="list-disc space-y-1 pl-5 text-[13px] text-ink-2">
           <li>Actual attendee: distinct external person with at least one admitted AND verified check-in. Walk-ins count; internal, staff and test people never do.</li>
           <li>As-of means the end of the selected day in IST. Nothing dated later is counted.</li>
           <li>Rows with identical stable IDs are import copies and count once. If an ID repeats with a different payload, the last row wins and Data health warns.</li>

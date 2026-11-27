@@ -113,7 +113,7 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
             </select>
           </Field>
           <Field label="Origin">
-            <input className={`${inputCls} bg-slate-50`} value={t.origin} readOnly />
+            <input className={`${inputCls} bg-subtle`} value={t.origin} readOnly />
           </Field>
         </div>
         {ticket && (
@@ -123,7 +123,7 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
           </div>
         )}
         {ref && (
-          <div className="rounded-md bg-slate-50 p-3 text-[12px] text-slate-700">
+          <div className="rounded-md bg-subtle p-3 text-[12px] text-ink-2">
             <div className="mb-1 font-semibold">Why this task exists (snapshot at creation)</div>
             {typeof ref.reason === "string" && <div>{ref.reason}</div>}
             {Array.isArray(ref.evidence) && ref.evidence.length > 0 && (

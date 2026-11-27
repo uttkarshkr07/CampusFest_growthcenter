@@ -29,6 +29,15 @@ export default function ChatThread() {
   // asked once; and once more when the new data first becomes available to someone who could not pick it
   const askDataset = chooser === null || (chooser === "originalOnly" && simulated === "ready");
   const [text, setText] = useState("");
+  // one of Mayu's poses, picked after mount so the server and browser render the same first frame
+  const [pose, setPose] = useState(MASCOT.poses[0]);
+  useEffect(() => setPose(MASCOT.poses[Math.floor(Math.random() * MASCOT.poses.length)]), []);
+  const pending = useChat((st) => st.pending);
+  useEffect(() => {
+    if (pending == null) return;
+    const q = useChat.getState().takePending();
+    if (q) setText(q);
+  }, [pending]);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // braces matter: scrollIntoView returns a Promise in newer browsers, and an effect must not return it
@@ -53,7 +62,11 @@ export default function ChatThread() {
         )}
         {!loading && messages.length === 0 && (
           <div className="space-y-3">
-            <p className="text-[13px] text-slate-700">{MASCOT.greeting}</p>
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pose} alt={`${MASCOT.name}, the fest mascot`} width={64} height={64} className="h-16 w-16 shrink-0 object-contain" />
+              <p className="text-[13px] text-ink-2">{MASCOT.greeting}</p>
+            </div>
             <div className="flex flex-col items-start gap-1.5">
               {STARTERS.map((q) => (
                 <button key={q} onClick={() => submit(q)} className="rounded-full border border-line px-3 py-1 text-left text-[12px] hover:bg-brand-soft">
@@ -69,7 +82,7 @@ export default function ChatThread() {
               <div className="my-2 border-t border-dashed border-line pt-1 text-center text-[11px] text-muted">Selected date changed to {fmtDate(m.asOf)}</div>
             )}
             {m.role === "user" ? (
-              <div className="ml-8 rounded-lg bg-brand px-3 py-2 text-[13px] text-white">{m.text}</div>
+              <div className="ml-8 rounded-lg bg-brand px-3 py-2 text-[13px] text-on-accent">{m.text}</div>
             ) : (
               <>
                 {m.asOf > asOf && (
@@ -127,7 +140,7 @@ export default function ChatThread() {
 function Answer({ message: m }: { message: ChatMessage }) {
   if (m.error)
     return (
-      <div className="mr-4 rounded-lg border border-red-200 bg-bad-soft px-3 py-2 text-[13px] text-bad">
+      <div className="mr-4 rounded-lg border border-bad/30 bg-bad-soft px-3 py-2 text-[13px] text-bad">
         <div className="font-semibold">No AI answer</div>
         <div>{m.text}</div>
         <div className="mt-1 text-[12px]">
@@ -136,7 +149,7 @@ function Answer({ message: m }: { message: ChatMessage }) {
       </div>
     );
   return (
-    <div className="mr-4 rounded-lg border border-line bg-white px-3 py-2 text-[13px]">
+    <div className="mr-4 rounded-lg border border-line bg-panel px-3 py-2 text-[13px]">
       <Markdown text={m.text} />
       {!!m.unverified?.length && (
         <div className="mt-2 flex gap-1.5 rounded-md bg-warn-soft px-2 py-1.5 text-[12px] text-warn">
@@ -184,9 +197,9 @@ function ActionCard({ message, action }: { message: ChatMessage; action: ChatAct
         <ListPlus className="h-3.5 w-3.5" /> Task draft{action.status === "proposed" ? " (not saved)" : ""}
       </div>
       <div className="mt-1 font-semibold">{p.title}</div>
-      {p.reason && <div className="text-[12px] text-slate-700">Why: {p.reason}</div>}
+      {p.reason && <div className="text-[12px] text-ink-2">Why: {p.reason}</div>}
       {ticket && (
-        <div className="text-[12px] text-slate-700">
+        <div className="text-[12px] text-ink-2">
           For ticket: {ticket.title}
           {ticket.simulation_note && <div className="font-semibold text-warn">{ticket.simulation_note}</div>}
         </div>
@@ -250,7 +263,7 @@ function Evidence({ message: m }: { message: ChatMessage }) {
             {t.value != null && (
               <details>
                 <summary className="cursor-pointer">Result data</summary>
-                <pre className="max-h-48 overflow-auto rounded bg-slate-50 p-1.5 text-[10px]">{JSON.stringify(t.value, null, 1)}</pre>
+                <pre className="max-h-48 overflow-auto rounded bg-subtle p-1.5 text-[10px]">{JSON.stringify(t.value, null, 1)}</pre>
               </details>
             )}
           </div>

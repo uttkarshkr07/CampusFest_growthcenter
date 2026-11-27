@@ -7,6 +7,7 @@ import { whatIf, type WhatIfSpec } from "./whatif";
 import { TICKET_STATUSES, TICKET_TEAMS, ticketsView, type TicketTeam } from "./tickets";
 import type { TicketStatus } from "./types";
 import { viewAsOf } from "./view";
+import { betStatus, bookings, championshipView, money } from "./copilot_bets";
 import { resolveAsOf } from "./time";
 
 const asOf = z
@@ -132,6 +133,28 @@ export const catalog = {
       capacityAttendees: z.number().int().positive().optional(),
     }),
     run: (d: Dataset, a: WhatIfSpec) => whatIf(d, a),
+  },
+  betStatus: {
+    description:
+      "The five growth bets (B1 to B5) and the whole plan (PLAN): each bet's KPIs (K01 to K22) with verdict (Scale, Change, Stop, Too early, Not enough data, Not applicable, Tracking), value, check date, threshold action and bet spend vs budget. Pass betId for one bet in detail, or kpiId for one KPI with its numbers, threshold and breakdown (for example per college). Use for any question about bets, KPIs, verdicts or checkpoints.",
+    input: z.object({ asOf, betId: z.string().max(10).optional(), kpiId: z.string().max(10).optional() }),
+    run: (d: Dataset, a: { asOf: string; betId?: string; kpiId?: string }) => betStatus(d, a.asOf, a),
+  },
+  bookings: {
+    description:
+      "The fest program by venue and session: seats offered, seats booked, waitlist, exchange offers claimed / expired / open, door attendance and people turned away, venue fill by day, sold-out and overbooked sessions. Filter by venueId, eventId, day (YYYY-MM-DD) or bookableOnly.",
+    input: z.object({ asOf, venueId: z.string().max(20).optional(), eventId: z.string().max(20).optional(), day: z.string().max(10).optional(), bookableOnly: z.boolean().optional() }),
+    run: (d: Dataset, a: { asOf: string; venueId?: string; eventId?: string; day?: string; bookableOnly?: boolean }) => bookings(d, a.asOf, a),
+  },
+  championship: {
+    description: "College Championship standings (points, rank, attendees, tier), the Contingent Trophy, results recorded and point mismatches. Pass collegeId for one college with its contingents and tiers reached; top for how many rows (default 10).",
+    input: z.object({ asOf, collegeId: z.string().max(20).optional(), top: z.number().int().min(1).max(30).optional() }),
+    run: (d: Dataset, a: { asOf: string; collegeId?: string; top?: number }) => championshipView(d, a.asOf, a),
+  },
+  payments: {
+    description: "Money from passes: payments by kind (pre-booking, lock-in, single, gate, cashback, wallet credit, exam refunds), passes by state (pre-booked, locked in, cancelled or released, valid, hostel), exam-clash insurance claims and approved refunds, and the pre-book, lock-in, claims and givebacks KPIs.",
+    input: z.object({ asOf }),
+    run: (d: Dataset, a: { asOf: string }) => money(d, a.asOf),
   },
   eventInfo: {
     description: "Event dates, history window and every target version.",

@@ -1,6 +1,6 @@
 // Opt-in check of the real model. It SPENDS FREE-TIER QUOTA, so it is skipped unless asked for:
 //   MODEL_EVAL=gemini-3.5-flash-lite npx vitest run tests/model_eval.test.ts
-// Optional: EVAL_ONLY=id,id  EVAL_OUT=file.json
+// Optional: EVAL_ONLY=id,id  EVAL_OUT=file.json  EVAL_DATASET=original|simulated|both
 // It runs the real proxy route and tool loop on a read-only copy of the live data (nothing is written).
 // The answers are saved for a person to grade: passing this file does not mean the answers are right.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -11,8 +11,12 @@ import * as E from "@/lib/engine";
 import { POST } from "@/app/api/copilot/route";
 import { runTurn } from "@/lib/copilot/loop";
 import { ModelError, type ChatMessage, type ModelReply, type ModelRequest } from "@/lib/copilot/types";
+import { loadDataset } from "@/lib/data/load";
+import { ANSWER_LABEL, DATASET_LABEL, type DatasetId } from "@/lib/datasets";
 
 const MODEL = process.env.MODEL_EVAL;
+// EVAL_DATASET=original | simulated | both (default original)
+const WANT = (process.env.EVAL_DATASET ?? "original") as "original" | "simulated" | "both";
 const NOW = "2025-04-20";
 const MAR15 = "2025-03-15";
 
@@ -20,12 +24,33 @@ interface Case {
   id: string;
   asOf: string;
   q: string;
-  /** use the answer of this earlier case as chat history */
+  /** use the answer of this earlier case (and its own chain) as chat history */
   after?: string;
   edit?: (d: E.Dataset) => void;
+  dataset?: DatasetId;
 }
 
+// Simulated questions. Grade against dataset_gen/expected_kpis.json, independent_check.py and STORY.md.
+const SIM_CASES = ([
+  { id: "s_attend", asOf: NOW, q: "How many actual attendees did we have, how many came on both days, and how did that compare with the goal?" },
+  { id: "s_contingent", asOf: MAR15, q: "Is the college contingent bet on track at its checkpoint?" },
+  { id: "s_overbooked", asOf: "2025-04-03", q: "Is any standup show overbooked, and how many people are waiting for seats?" },
+  { id: "s_champ", asOf: NOW, q: "Who won the College Championship and the Contingent Trophy, and with how many points?" },
+  { id: "s_claims", asOf: NOW, q: "How many exam-clash insurance claims were filed, how many were approved, and how much was refunded?" },
+  { id: "s_lockin", asOf: "2025-04-02", q: "What share of two-step pre-bookings has locked in by the deadline, and what is the verdict?" },
+  { id: "s_hindsight", asOf: MAR15, q: "Which college will win the Championship and how many people will finally attend?" },
+  { id: "s_why", asOf: NOW, q: "Why did the confirmed people who did not show up stay away?" },
+  // demo workflow on the simulated data
+  { id: "s_demo_change", asOf: MAR15, q: "Which bets show Change right now?" },
+  { id: "s_demo_why", asOf: MAR15, after: "s_demo_change", q: "Why is the Squad Pass bet on Change, and what does its rule say to do?" },
+  { id: "s_demo_task", asOf: MAR15, after: "s_demo_why", q: "Create a task for the publicity team to act on that." },
+  { id: "s_demo_follow", asOf: MAR15, after: "s_demo_why", q: "How far is it from the Scale line?" },
+  { id: "s_demo_unknown", asOf: MAR15, after: "s_demo_follow", q: "Which friends' groups will drop out of their squads before the fest, and why?" },
+] as Case[]).map((c) => ({ ...c, dataset: "simulated" as const }));
+
 const CASES: Case[] = [
+  { id: "o_nobets", asOf: NOW, q: "How many seats were booked for the standup shows, and who won the College Championship?" },
+  { id: "o_bets", asOf: MAR15, q: "Which of our bets are on Change right now?" },
   { id: "funnel", asOf: NOW, q: "Walk me through the funnel from identified people to actual attendees, and explain how actual attendees are counted." },
   { id: "slice", asOf: NOW, q: "How many people attended on both days, and which hour had the most admissions?" },
   { id: "whatif_pre", asOf: MAR15, q: "What happens to attendance if we cut the marketing budget by 20%?" },
@@ -85,9 +110,9 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       delete process.env.NEXT_PUBLIC_AUTH_MODE; // the question set calls the route without signing in
       // read only; the local service key still works once visitors are locked out
       const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-      const { data, error } = await db.rpc("get_dataset");
-      expect(error).toBeNull();
-      const base = data as E.Dataset;
+      // the app's own loader, so the simulated bet tables and the original program come too
+      const bases: Partial<Record<DatasetId, E.Dataset>> = {};
+      for (const ds of WANT === "both" ? (["original", "simulated"] as const) : [WANT]) bases[ds] = (await loadDataset(db, ds, () => {})).data;
       const sponsor = JSON.parse(readFileSync(path.resolve(__dirname, "../data/seed/sponsor.json"), "utf8")) as E.SponsorData;
 
       // note token counts and finish reasons without changing what the route does
@@ -112,11 +137,17 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       const only = process.env.EVAL_ONLY?.split(",");
       const answers = new Map<string, { q: string; message: ChatMessage }>();
       const results: unknown[] = [];
-      for (const c of CASES.filter((x) => !only || only.includes(x.id))) {
-        const dataset = structuredClone(base);
+      const all = [...CASES.map((c) => ({ ...c, dataset: "original" as const })), ...SIM_CASES].filter((c) => bases[c.dataset] && (!only || only.includes(c.id)));
+      for (const c of all) {
+        const ds = c.dataset;
+        const dataset = structuredClone(bases[ds]!);
         c.edit?.(dataset);
-        const earlier = c.after ? answers.get(c.after) : undefined;
-        const history: ChatMessage[] = earlier ? [{ id: "q", role: "user", text: earlier.q, asOf: earlier.message.asOf, createdAt: "" }, earlier.message] : [];
+        // the whole chain of earlier turns, oldest first
+        const history: ChatMessage[] = [];
+        for (let id = c.after; id; id = all.find((x) => x.id === id)?.after) {
+          const earlier = answers.get(id);
+          if (earlier) history.unshift({ id: `q-${id}`, role: "user", text: earlier.q, asOf: earlier.message.asOf, createdAt: "" }, earlier.message);
+        }
         usage = [];
         const started = Date.now();
         try {
@@ -124,15 +155,16 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
             question: c.q,
             selectedDate: c.asOf,
             summary: E.buildSummary(dataset, c.asOf),
-            context: { today: c.asOf },
+            context: { today: c.asOf, dataset: ds === "simulated" ? `${DATASET_LABEL.simulated} (a made-up simulation, not real results)` : DATASET_LABEL.original },
             history,
+            datasetLabel: ANSWER_LABEL[ds],
             callModel,
             runTool: (name, args) => (name === "sponsor" ? E.executeSponsorTool(sponsor, args, c.asOf) : E.executeToolAsOf(dataset, name, args, c.asOf)),
           });
           answers.set(c.id, { q: c.q, message });
-          results.push({ id: c.id, asOf: c.asOf, q: c.q, seconds: (Date.now() - started) / 1000, requests: message.requests, unverified: message.unverified, tools: message.tools?.map((t) => ({ name: t.name, args: t.args, ok: t.ok, error: t.error })), actions: message.actions, answer: message.text, usage });
+          results.push({ id: c.id, dataset: ds, asOf: c.asOf, q: c.q, seconds: (Date.now() - started) / 1000, requests: message.requests, unverified: message.unverified, tools: message.tools?.map((t) => ({ name: t.name, args: t.args, ok: t.ok, error: t.error })), actions: message.actions, answer: message.text, usage });
         } catch (e) {
-          results.push({ id: c.id, asOf: c.asOf, q: c.q, seconds: (Date.now() - started) / 1000, failed: e instanceof ModelError ? `${e.kind}: ${e.message}` : String(e), usage });
+          results.push({ id: c.id, dataset: ds, asOf: c.asOf, q: c.q, seconds: (Date.now() - started) / 1000, failed: e instanceof ModelError ? `${e.kind}: ${e.message}` : String(e), usage });
           if (e instanceof ModelError && ["quota_day", "no_key", "bad_request"].includes(e.kind)) break; // do not burn quota on a certain failure
         }
         if (process.env.EVAL_OUT) writeFileSync(process.env.EVAL_OUT, JSON.stringify(results, null, 1));
@@ -142,6 +174,6 @@ describe.skipIf(!MODEL)("real model evaluation", () => {
       if (process.env.EVAL_OUT) writeFileSync(process.env.EVAL_OUT, JSON.stringify(results, null, 1));
       expect(results.length).toBeGreaterThan(0);
     },
-    540_000,
+    1_800_000,
   );
 });

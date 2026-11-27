@@ -11,7 +11,7 @@ const EFFECT: Record<Effect, { label: string; style: string }> = {
   excluded: { label: "Left out", style: "bg-bad-soft text-bad" },
   check: { label: "Check", style: "bg-warn-soft text-warn" },
   read_as: { label: "Read as tidied", style: "bg-brand-soft text-brand" },
-  info: { label: "Expected by the rules", style: "bg-slate-100 text-slate-600" },
+  info: { label: "Expected by the rules", style: "bg-subtle-2 text-muted" },
 };
 const PAGE = 20;
 
@@ -67,7 +67,7 @@ function IssueRow({ issue }: { issue: Issue }) {
   const at = Math.min(page, pages);
   return (
     <div className="rounded-md border border-line">
-      <button className="flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left hover:bg-slate-50" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button className="flex w-full flex-wrap items-center gap-2 px-3 py-2 text-left hover:bg-subtle" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${EFFECT[issue.effect].style}`}>{EFFECT[issue.effect].label}</span>
         <span className="text-[13px] font-semibold">{issue.title}</span>
         <span className="text-[12px] text-muted">in {issue.table.replace(/_/g, " ")}</span>

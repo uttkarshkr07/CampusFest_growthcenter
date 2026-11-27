@@ -73,7 +73,7 @@ export default function PersonPage() {
               const color = t.kind === "checkin" ? (t.counts ? "text-good" : "text-bad") : t.kind === "status" ? "text-brand" : "text-muted";
               return (
                 <li key={i} className="relative">
-                  <Icon className={`absolute -left-[27px] top-0.5 h-4 w-4 bg-white ${color}`} />
+                  <Icon className={`absolute -left-[27px] top-0.5 h-4 w-4 bg-panel ${color}`} />
                   <div className="text-[13px] font-medium capitalize">{t.title}</div>
                   <div className="text-[12px] text-muted">
                     {fmtDateTime(t.at)}

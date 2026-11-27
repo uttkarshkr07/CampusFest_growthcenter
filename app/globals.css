@@ -1,20 +1,59 @@
 @import "tailwindcss";
 
+/* dark mode is a class on <html>, set before paint by the script in layout.tsx */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-ink: #0f172a;
+  --color-ink-2: #334155;
   --color-muted: #64748b;
+  --color-faint: #cbd5e1;
   --color-line: #e2e8f0;
+  --color-line-strong: #94a3b8;
   --color-panel: #ffffff;
-  --color-canvas: #f6f7f9;
-  --color-brand: #3b5bdb;
-  --color-brand-soft: #edf2ff;
-  --color-good: #2b8a3e;
-  --color-good-soft: #ebfbee;
-  --color-warn: #b7791f;
-  --color-warn-soft: #fff8e6;
-  --color-bad: #c92a2a;
+  --color-subtle: #f6f8fb;
+  --color-subtle-2: #eef1f6;
+  --color-canvas: #f4f6fa;
+  /* deck brand: blue 0F5BFF, navy 071A4D, tint F3F6FF */
+  --color-brand: #0f5bff;
+  --color-brand-soft: #eaf0ff;
+  --color-navy: #071a4d;
+  --color-app: #0b3a8f;
+  --color-app-soft: #e6eefc;
+  --color-on-accent: #ffffff;
+  --color-good: #1f7a3a;
+  --color-good-soft: #e9f8ee;
+  --color-warn: #9a6212;
+  --color-warn-soft: #fff6e0;
+  --color-bad: #c42b2b;
   --color-bad-soft: #fff0f0;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-ink: #e7ebf3;
+  --color-ink-2: #c5cddb;
+  --color-muted: #94a0b6;
+  --color-faint: #4b566c;
+  --color-line: #273149;
+  --color-line-strong: #4a5670;
+  --color-panel: #121a2c;
+  --color-subtle: #182136;
+  --color-subtle-2: #1f2a42;
+  --color-canvas: #0b1120;
+  --color-brand: #6f9dff;
+  --color-brand-soft: #172649;
+  --color-navy: #c9d8ff;
+  --color-app: #a9c2ff;
+  --color-app-soft: #18264a;
+  --color-on-accent: #0b1120;
+  --color-good: #56c98a;
+  --color-good-soft: #10291c;
+  --color-warn: #e8b04a;
+  --color-warn-soft: #2d2410;
+  --color-bad: #ff7b7b;
+  --color-bad-soft: #351719;
 }
 
 html,
@@ -46,10 +85,23 @@ input,
 select,
 textarea {
   outline: none;
+  background-color: var(--color-panel);
+  color: var(--color-ink);
 }
 input:focus,
 select:focus,
 textarea:focus {
   box-shadow: 0 0 0 2px var(--color-brand-soft);
   border-color: var(--color-brand);
+}
+
+/* recharts text follows the theme */
+.recharts-text,
+.recharts-cartesian-axis-tick-value {
+  fill: var(--color-muted);
+}
+.recharts-default-tooltip {
+  background: var(--color-panel) !important;
+  border-color: var(--color-line) !important;
+  color: var(--color-ink);
 }

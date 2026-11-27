@@ -55,7 +55,7 @@ export default function PeoplePage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.person_id} className="border-b border-line/60 hover:bg-slate-50">
+                  <tr key={r.person_id} className="border-b border-line/60 hover:bg-subtle">
                     <td className="px-2 py-1.5 font-mono text-[12px]">
                       <Link className="text-brand hover:underline" href={`/people/${encodeURIComponent(r.person_id)}`}>
                         {r.person_id}

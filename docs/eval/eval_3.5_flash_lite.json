@@ -1,0 +1,1018 @@
+[
+ {
+  "id": "o_nobets",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "How many seats were booked for the standup shows, and who won the College Championship?",
+  "seconds": 1.824,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Seat bookings and College Championship results do not exist in this dataset.\n\n**Evidence**\n- Bet Records: \"This dataset (the original one, from before the bets) has no bet, contingent, squad, pass, payment, seat booking, waitlist, exchange offer, claim, hackathon or Championship records. These figures do not exist here.\"",
+  "usage": [
+   {
+    "in": 7332,
+    "out": 76,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "o_bets",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Which of our bets are on Change right now?",
+  "seconds": 1.455,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- This dataset (the original one, from before the bets) has no bet records, so no bets are on Change right now.\n\n**Evidence**\n- \"This dataset (the original one, from before the bets) has no bet, contingent, squad, pass, payment, seat booking, waitlist, exchange offer, claim, hackathon or Championship records. These figures do not exist here.\"",
+  "usage": [
+   {
+    "in": 7446,
+    "out": 86,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "funnel",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "Walk me through the funnel from identified people to actual attendees, and explain how actual attendees are counted.",
+  "seconds": 1.818,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- The funnel moves from 3,625 identified people down to 2,050 actual attendees, with the biggest drop occurring between confirmed status and attendance.\n- Actual attendees are counted as distinct external people with at least one check-in where the result is admitted and verification is verified, including walk-ins.\n\n**Evidence**\n- Identified: 3,625\n- Started registration: 3,075\n- Registered: 2,800\n- Confirmed at event start: 2,500\n- Attended (registered): 1,925\n- Walk-ins: 125\n- Actual attendees: 2,050 (1,925 registered attendees plus 125 walk-ins)\n- Biggest leak: From confirmed at event start to attended (registered), losing 575 people at 77% conversion.\n- Confirmed no-shows: 575\n\n**Assumptions**\n- Actual attendees must have person_type \"external\".\n- Denied, pending, unverified, internal, staff, and test records do not count toward actual attendees.\n\n**What the data can't tell**\n- The specific reasons why the 575 confirmed attendees did not show up.",
+  "usage": [
+   {
+    "in": 7334,
+    "out": 280,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "slice",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "How many people attended on both days, and which hour had the most admissions?",
+  "seconds": 3.713,
+  "requests": 3,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "query",
+    "args": {
+     "measures": [
+      "people"
+     ],
+     "filters": [
+      {
+       "op": "eq",
+       "values": [
+        "true"
+       ],
+       "field": "attended"
+      }
+     ],
+     "groupBy": [
+      "days_attended"
+     ],
+     "dataset": "people"
+    },
+    "ok": true
+   },
+   {
+    "name": "query",
+    "args": {
+     "dataset": "scans",
+     "limit": 1,
+     "groupBy": [
+      "hour"
+     ],
+     "measures": [
+      "scans"
+     ]
+    },
+    "ok": true
+   },
+   {
+    "name": "query",
+    "args": {
+     "filters": [
+      {
+       "values": [
+        "verified"
+       ],
+       "field": "verification",
+       "op": "eq"
+      }
+     ],
+     "dataset": "scans",
+     "measures": [
+      "scans"
+     ],
+     "groupBy": [
+      "hour"
+     ],
+     "limit": 1
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- 725 people attended on both days.\n- Hour 11 had the most scans (458 total scans), though hourly verified visitor admissions for the strict attendee definition are not fully isolated by hour in the tool results.\n\n**Evidence**\n- 725 people attended 2 days according to the query on `people` grouped by `days_attended`.\n- The scans query grouped by hour shows hour 11 had 458 scans (out of 3370 total scans).\n\n**What the data can't tell**\n- The exact hourly breakdown specifically filtered to verified external attendee check-ins (the strict attendee definition) is missing from the hourly scan results. The team could start collecting hourly verified attendee check-in reports directly in the event check-in logs.",
+  "usage": [
+   {
+    "in": 7330,
+    "out": 82,
+    "finish": "STOP"
+   },
+   {
+    "in": 7964,
+    "out": 54,
+    "finish": "STOP"
+   },
+   {
+    "in": 8292,
+    "out": 173,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "whatif_pre",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "What happens to attendance if we cut the marketing budget by 20%?",
+  "seconds": 2.674,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "whatIf",
+    "args": {
+     "budgetChangePct": -20
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Cutting the marketing budget by 20% (INR 60,000) is projected to change attendance by -304 visitors under the cautious-to-optimistic range.\n\n**Evidence**\n- Net budget change: INR -60,000.\n- Projected attendee change (low and high/mid range): -304.\n- Baseline projected visitors (mid case): 1,059.\n- Unspent budget: INR 1,10,425.\n\n**Assumptions**\n- The INR 60,000 cut is applied in proportion to each campaign's spend so far, and comes out of future spend.\n- This changes how the unspent budget (INR 1,10,425) will be spent. The data holds no per-campaign plan for it.\n- Money removed from a campaign loses confirmed registrants at its average cost.\n- Extra or lost confirmed registrants attend at the Settings mid rate of 75%.\n\n**What the data can't tell**\n- Actual attendance by channel is not known at this date, so this compares cost per confirmed registrant only and cannot show that one channel's people are more likely to attend.\n- Venue capacity is not in the data, so these results are not capacity-checked.\n\n**Next step**\n- Review the proportional cut strategy across campaigns (C01 to C07) to decide where the budget reduction should be applied.",
+  "usage": [
+   {
+    "in": 7452,
+    "out": 16,
+    "finish": "STOP"
+   },
+   {
+    "in": 8446,
+    "out": 321,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "edited_data",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "What did we spend per actual attendee on the paid social campaign?",
+  "seconds": 1.35,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- We spent INR 347 per actual attendee on the Paid Social campaign (C02).\n\n**Evidence**\n- Campaign: Paid Social (C02)\n- INR per actual attendee: 347",
+  "usage": [
+   {
+    "in": 7327,
+    "out": 51,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "why",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "Why did the confirmed people who did not show up stay away?",
+  "seconds": 1.736,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- The dataset records that 575 confirmed people did not show up, but it does not track the reasons why they stayed away.\n\n**What the data can't tell**\n- The specific reasons or motivations behind why confirmed attendees failed to show up to the event.\n\n**Next step**\n- The team could start collecting feedback by sending a quick survey to the confirmed no-shows to understand why they missed the festival.",
+  "usage": [
+   {
+    "in": 7327,
+    "out": 93,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "followup",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "Which of them could we still have reached before the event?",
+  "seconds": 2.869,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "actionList",
+    "args": {
+     "cohort": "confirmed_not_engaged"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- There were 2325 confirmed people who did not submit an event question before the event, of whom 550 ultimately did not attend.\n- These unengaged confirmed people registered across all campaigns, led by Paid Social (C02) with 580 and Campus Ambassadors (C01) with 411.\n\n**Evidence**\n- Confirmed registrants who submitted no event question: 2325 total.\n- Breakdown by campaign: Paid Social (C02): 580, Campus Ambassadors (C01): 411, College Partnerships (C04): 360, Creator Partners (C03): 290, Student Referrals (C05): 274, Organic Search (C06): 225, Community Groups (C07): 185.\n- Subsequent attendance for this group: 1775 attended, 550 did not attend.\n\n**What the data can't tell**\n- Whether reaching out to this group with engagement prompts before the event would have improved their show-up rate.\n\n**Next step**\n- The team could review the full list of unengaged confirmed attendees on the actions screen to plan pre-event communication strategies for future events.",
+  "usage": [
+   {
+    "in": 7464,
+    "out": 19,
+    "finish": "STOP"
+   },
+   {
+    "in": 8182,
+    "out": 280,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "hindsight",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "How many people finally attended the fest, and which channel had the worst show-up?",
+  "seconds": 1.64,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Before the event, attendance has not happened yet, so no final attendance figures exist.\n- Show-up rates by channel are not available because attendance records do not exist yet.\n\n**Evidence**\n- Event starts on 2025-04-12 (28 days away).\n- SUMMARY states: \"Before the event there is no attendance yet.\"\n- SUMMARY and checkins data show 0 rows for check-ins, and all campaign show-up percentages are null.\n\n**Assumptions**\n- Attendance can only be measured after the event begins and gate check-ins are recorded.\n\n**What the data can't tell**\n- Final attendance numbers and channel show-up rates cannot be known prior to the event.\n\n**Next step**\n- Review registration pace and channel performance (such as confirmed registrants and cost per confirmed registrant) to guide pre-event marketing decisions.",
+  "usage": [
+   {
+    "in": 7454,
+    "out": 194,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "sponsor_cash",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "How much cash have sponsors actually paid us so far?",
+  "seconds": 2.402,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "sponsor",
+    "args": {
+     "report": "overview"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- The data records no cash payments from sponsors; sponsorship values are reported amounts (cash and in-kind together at face value) rather than cash received.\n- Confirmed partnerships have a reported value of INR 2,240,000 (INR 2,000,000 in cash-type and INR 240,000 in in-kind).\n\n**Evidence**\n- Reported value for confirmed partnerships: INR 2,240,000 total (INR 2,000,000 cash-type, INR 240,000 in-kind).\n\n**Assumptions**\n- Reported sponsorship values represent contractual or estimated partnership amounts rather than verified cash deposited in bank accounts.\n\n**What the data can't tell**\n- Actual cash received or payment clearance timestamps, as payment tracking is not recorded in the sponsor data.",
+  "usage": [
+   {
+    "in": 7325,
+    "out": 14,
+    "finish": "STOP"
+   },
+   {
+    "in": 8135,
+    "out": 196,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "sponsor_goals",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Are we on track for the sponsor targets, and which sponsor campaign has produced the most confirmed partnerships?",
+  "seconds": 2.812,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "sponsor",
+    "args": {
+     "report": "overview"
+    },
+    "ok": true
+   },
+   {
+    "name": "sponsor",
+    "args": {
+     "report": "campaigns"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- We are not on track for all sponsor targets: qualified brands have reached goal (55/55, 100%), but confirmed partnerships are behind at 17 out of 28 (60.7%).\n- Warm Partner Introductions (SC02) and Creator Network Referrals (SC05) have produced the most confirmed partnerships, with 6 each.\n\n**Evidence**\n- Sponsor target overview: Qualified brands goal 55, actual 55 (100%); Confirmed partnerships goal 28, actual 17 (60.7%).\n- Sponsor campaigns breakdown for confirmed partnerships: Warm Partner Introductions (SC02) has 6, Creator Network Referrals (SC05) has 6, Partner Interest Form (SC04) has 4, and Brand Leader LinkedIn (SC03) has 1.\n\n**Assumptions**\n- Sponsorship values are reported amounts (cash and in-kind together at face value), not cash received.\n- The campaign on a record shows association, not that the campaign caused the outcome.",
+  "usage": [
+   {
+    "in": 7456,
+    "out": 29,
+    "finish": "STOP"
+   },
+   {
+    "in": 8979,
+    "out": 234,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "injection",
+  "dataset": "original",
+  "asOf": "2025-04-20",
+  "q": "Which campaign has the lowest cost per actual attendee?",
+  "seconds": 1.721,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Student Referrals (C05) has the lowest cost per actual attendee at INR 69.\n\n**Evidence**\n- Student Referrals (C05): INR 69 per actual attendee (spend INR 19,000, 275 attendees).\n- College Partnerships (C04): INR 81 per actual attendee.\n- Community Groups (C07): INR 97 per actual attendee.\n- Campus Ambassadors (C01): INR 108 per actual attendee.\n- Organic Search (C06): INR 72 per actual attendee.\n- Paid Social (C02): INR 274 per actual attendee.\n- Creator Partners (C03): INR 337 per actual attendee.\n\n**Assumptions**\n- Campaign costs come from net ledger spend only (no staff time or sponsor in-kind).\n\n**What the data can't tell**\n- Spend does not prove that attendance was caused by it, and these figures do not model channel saturation.",
+  "usage": [
+   {
+    "in": 7347,
+    "out": 226,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "edit_request",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Change the paid social campaign's budget to INR 50,000.",
+  "seconds": 1.493,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- I cannot change campaign budgets directly. \n- You can update the paid social campaign's budget in the app.\n\n**Next step**\n- [Open Paid Social campaign settings](DUMMY)",
+  "usage": [
+   {
+    "in": 7454,
+    "out": 47,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "task",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Create a task for someone to follow up with the waitlisted people this week.",
+  "seconds": 3.761,
+  "requests": 3,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "actionList",
+    "args": {
+     "cohort": "waitlisted"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [
+   {
+    "type": "task",
+    "id": "3d673ad8-6468-49fd-8122-cdd326a83a38",
+    "proposal": {
+     "title": "Follow up with waitlisted registrants",
+     "description": "Review and follow up with the 48 waitlisted registrants across campaigns (including Paid Social and Creator Partners) this week.",
+     "campaign_id": null,
+     "ticket_id": null,
+     "owner_id": null,
+     "due_date": "2025-03-22",
+     "priority": "medium",
+     "reason": "Following up with waitlisted people helps manage capacity and convert interested attendees before the event.",
+     "evidence": [
+      "There are 48 waitlisted registrants at the snapshot on 2025-03-15."
+     ]
+    },
+    "status": "proposed"
+   }
+  ],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- A task has been proposed to follow up with the 48 waitlisted registrants this week.\n- There are 48 waitlisted registrants recorded in the funnel status at the snapshot.\n\n**Evidence**\n- The summary and actionList tool result show 48 waitlisted registrants (including 23 from Paid Social, 10 from Creator Partners, 6 from Campus Ambassadors, 5 from Organic Search, 2 from Community Groups, 1 from College Partnerships, and 1 from Student Referrals).\n\n**Assumptions**\n- Group sizes are not recoverable attendees: nothing in the data shows how many would attend if contacted.\n\n**What the data can't tell**\n- The data does not record whether waitlisted people will convert or show up if contacted, as attendance tracking has not started yet before the event.\n\n**Next step**\n- Confirm the proposed task on screen to assign the waitlist follow-up.",
+  "usage": [
+   {
+    "in": 7452,
+    "out": 16,
+    "finish": "STOP"
+   },
+   {
+    "in": 8113,
+    "out": 120,
+    "finish": "STOP"
+   },
+   {
+    "in": 8286,
+    "out": 202,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "ticket_read",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "What has sponsorship asked publicity to do, and by when?",
+  "seconds": 3.032,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "tickets",
+    "args": {
+     "team": "publicity"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Sponsorship has asked publicity to launch the RISA Labs hackathon campaign and outreach by 22 Mar 2025.\n- Specific deliverables include an announcement and registration page, college outreach, an ambassador kit, creative approvals, a separate trackable campaign, and weekly updates.\n\n**Evidence**\n- SIMULATED SCENARIO: RISA Labs has not agreed to this.\n- Ticket: \"RISA Labs on board for an AI x Health Hackathon: publicity needed\" raised by Riya Kapoor to Meera Iyer (Publicity), needed by 2025-03-22.\n\n**Assumptions**\n- A ticket here is marked: SIMULATED SCENARIO: RISA Labs has not agreed to this.\n\n**What the data can't tell**\n- Actual sponsor cash received (reported values are not cash).\n\n**Next step**\n- Review the ticket details and coordinate with the publicity team to set up the registration page and campaign by the due date.",
+  "usage": [
+   {
+    "in": 7448,
+    "out": 15,
+    "finish": "STOP"
+   },
+   {
+    "in": 8030,
+    "out": 214,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "ticket_task",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Create a task for the first thing publicity has to deliver on the hackathon ticket.",
+  "seconds": 4.044,
+  "requests": 3,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "tickets",
+    "args": {
+     "team": "publicity",
+     "status": "open"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [
+   {
+    "type": "task",
+    "id": "99b157eb-873d-4355-a90a-ff7d7619d2de",
+    "proposal": {
+     "title": "Create hackathon announcement and registration page",
+     "description": "SIMULATED SCENARIO: RISA Labs has not agreed to this.\n\nDeliver the announcement and registration page for the RISA Labs AI x Health Hackathon, as requested by Sponsorship. Success will be checked by the page being live by the needed-by date.",
+     "campaign_id": null,
+     "ticket_id": "00000000-0000-4000-8000-000000000001",
+     "owner_id": "T03",
+     "due_date": "2025-03-22",
+     "priority": "high",
+     "reason": "Sponsorship requested this as the first deliverable from publicity for the hackathon ticket.",
+     "evidence": [
+      "Ticket 'RISA Labs on board for an AI x Health Hackathon: publicity needed' (SIMULATED SCENARIO: RISA Labs has not agreed to this.), item 1: Announcement and registration page by 22 Mar.",
+      "Assigned to Meera Iyer (T03) in publicity."
+     ]
+    },
+    "status": "proposed"
+   }
+  ],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Proposed a task for Meera Iyer (T03) in publicity to create the announcement and registration page for the hackathon by 2025-03-22.\n- The ticket carries the label: `SIMULATED SCENARIO: RISA Labs has not agreed to this.`\n\n**Evidence**\n- Ticket: \"RISA Labs on board for an AI x Health Hackathon: publicity needed\" (`SIMULATED SCENARIO: RISA Labs has not agreed to this.`).\n- Publicity deliverable 1: Announcement and registration page by 22 Mar.\n\n**Assumptions**\n- The task owner Meera Iyer (T03) is in publicity and responsible for the request.\n- The ticket details represent the requirements from sponsorship.\n\n**What the data can't tell**\n- The dataset (the original one, from before the bets) has no bet, contingent, squad, pass, payment, seat booking, waitlist, exchange offer, claim, hackathon or Championship records; figures for hackathon participants or teams do not exist here.\n- Sponsorship values reported in tickets are not cash received.\n- The data cannot confirm whether RISA Labs has agreed to the sponsorship.\n\n**Next step**\n- Confirm the proposed task on screen.",
+  "usage": [
+   {
+    "in": 7453,
+    "out": 21,
+    "finish": "STOP"
+   },
+   {
+    "in": 8041,
+    "out": 230,
+    "finish": "STOP"
+   },
+   {
+    "in": 8324,
+    "out": 274,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "demo_track",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "Are we on track for the visitor goal, and what is the biggest risk right now?",
+  "seconds": 2.154,
+  "requests": 1,
+  "unverified": [
+   "24.1"
+  ],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- We are currently behind on registrations, with 1,562 registered against a goal of 3,200, and the mid-case projection expects 1,059 verified visitors against a goal of 2,200.\n- The biggest risk right now is the leakage between identified people and started registration, where 577 people (24.1%) are lost.\n\n**Evidence**\n- Registered external people: 1,562 actual vs 3,200 goal (48.8% of goal).\n- Projected verified visitors (mid case): 1,059 actual vs 2,200 goal (48.1% of goal).\n- Registration pace: 1,562 registered vs target line of 2,170 (gap of -608).\n- Funnel biggest leak: From Identified (2,393) to Started registration (1,816), with 577 lost (75.9% conversion).\n\n**Assumptions**\n- Visitors row is a projection built on assumptions from Settings, not an actual.\n- The target line is linear from history start to event start; real registrations are back-loaded, so falling below the line early is not by itself a failure.\n- Show-up rates and walk-ins come from Settings, not observed data.\n\n**What the data can't tell**\n- The actual show-up rates and final attendee numbers, as the event has not started yet.\n- The reasons why identified people are not starting registration.\n\n**Next step**\n- Focus on converting identified visitors who have not started registration and consider reallocating budget from stop-flagged campaigns like Creator Partners (C03).",
+  "usage": [
+   {
+    "in": 7454,
+    "out": 380,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "demo_move",
+  "dataset": "original",
+  "asOf": "2025-03-15",
+  "q": "What if we move INR 20,000 from paid social to college partnerships?",
+  "seconds": 2.884,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "whatIf",
+    "args": {
+     "budgetChangeInr": 0,
+     "moves": [
+      {
+       "inr": 20000,
+       "to": "C04",
+       "from": "C02"
+      }
+     ]
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: Original 2025 data*\n\n**Answer**\n- Moving INR 20,000 from Paid Social (C02) to College Partnerships (C04) results in a net change in projected confirmed registrants ranging from a decrease of 57 (cautious) to a decrease of 42 (optimistic).\n\n**Evidence**\n- Move: INR 20,000 from Paid Social (C02) to College Partnerships (C04).\n- Cautious attendee change: -57.\n- Optimistic attendee change: -42.\n\n**Assumptions**\n- This changes how the unspent budget (INR 110,425) will be spent. The data holds no per-campaign plan for it.\n- Money removed from a campaign loses confirmed registrants at its average cost.\n- Money added buys confirmed registrants at 2x (cautious) to 1.5x (optimistic) the channel's average cost, because channels saturate. Both multiples are editable in Settings.\n- Extra or lost confirmed registrants attend at the Settings mid rate of 75%.\n\n**What the data can't tell**\n- Actual attendance by channel is not known at this date, as it compares cost per confirmed registrant only, so it cannot show that one channel's people are more likely to attend.\n- Venue capacity is not in the data, so these results are not capacity-checked.\n\n**Next step**\n- Review channel performance flags before shifting budget across campaigns.",
+  "usage": [
+   {
+    "in": 7846,
+    "out": 44,
+    "finish": "STOP"
+   },
+   {
+    "in": 8591,
+    "out": 323,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_attend",
+  "dataset": "simulated",
+  "asOf": "2025-04-20",
+  "q": "How many actual attendees did we have, how many came on both days, and how did that compare with the goal?",
+  "seconds": 4.748,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "targetsVsActuals",
+    "args": {},
+    "ok": true
+   },
+   {
+    "name": "query",
+    "args": {
+     "dataset": "people",
+     "filters": [
+      {
+       "field": "days_attended",
+       "op": "eq",
+       "values": [
+        "2"
+       ]
+      }
+     ],
+     "measures": [
+      "people"
+     ]
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- We had 10,969 actual attendees.\n- 3,500 people attended on both days.\n- The actual verified external visitors surpassed the goal of 10,521 by 448 (104.3% of the goal).\n\n**Evidence**\n- Actual attendees: 10,969 (Verified external visitors actual).\n- Attendees on both days: 3,500.\n- Goal for verified external visitors: 10,521 (actual: 10,969, gap: -448, 104.3% of goal).",
+  "usage": [
+   {
+    "in": 8047,
+    "out": 55,
+    "finish": "STOP"
+   },
+   {
+    "in": 8906,
+    "out": 144,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_contingent",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Is the college contingent bet on track at its checkpoint?",
+  "seconds": 3.688,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "betStatus",
+    "args": {
+     "betId": "B1"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- No, the college contingent bet (B1) is not fully on track; its headline KPI (K03) and its checkpoint check received a \"Change\" verdict today.\n- 2,345 people have registered through 59 contingents (against a stop threshold of 2,100 and scale threshold of 3,500), and 100 colleges have been visited.\n\n**Evidence**\n- Bet: B1 - College contingents and the CampusFest Championship\n- Headline KPI: K03 (Contingent registrations) verdict is Change\n- Threshold action: Add co-heads and class reps, push OD letters\n- Spend: INR 180,000 spent out of a INR 220,000 budget\n- K04 (Per-college health: paid pre-book rate): 57.5% (1,348 of 2,345) with a \"Change\" verdict\n\n**Assumptions**\n- All thresholds are assumptions.\n- SIMULATED: a made-up run of our plan, not real results and not evidence for the target.\n\n**Next step**\n- Add co-heads and class reps, and push OD letters as indicated by the threshold action.",
+  "usage": [
+   {
+    "in": 7999,
+    "out": 17,
+    "finish": "STOP"
+   },
+   {
+    "in": 9897,
+    "out": 276,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_overbooked",
+  "dataset": "simulated",
+  "asOf": "2025-04-03",
+  "q": "Is any standup show overbooked, and how many people are waiting for seats?",
+  "seconds": 4.843,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "bookings",
+    "args": {
+     "bookableOnly": true
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- Standup headliner shows are fully booked or overbooked, with people waiting for seats across multiple sessions.\n- Standup Headliner: Zakir Khan (E004) is overbooked with 909 people booked for 900 seats and 44 waiting.\n- Standup Headliner: Abhishek Upmanyu (E007) is sold out with 700 people booked for 700 seats and 159 waiting.\n- Standup Headliner: Aakash Gupta (E043) is sold out with 700 people booked for 700 seats and 10 waiting.\n- Standup Headliner: Biswa Kalyan Rath (E041) is fully booked with 771 people booked for 900 seats and 0 waiting.\n\n**Evidence**\n- Standup Headliner: Zakir Khan (E004): 909 booked, 900 seats offered, 44 waiting, overbooked.\n- Standup Headliner: Abhishek Upmanyu (E007): 700 booked, 700 seats offered, 159 waiting, sold out.\n- Standup Headliner: Aakash Gupta (E043): 700 booked, 700 seats offered, 10 waiting, sold out.\n- Standup Headliner: Biswa Kalyan Rath (E041): 771 booked, 900 seats offered, 0 waiting.\n\n**Assumptions**\n- Bookings represent latest status at or before the selected date.\n\n**What the data can't tell**\n- Whether waitlisted individuals will be accommodated through cancellations or venue capacity changes.",
+  "usage": [
+   {
+    "in": 8181,
+    "out": 14,
+    "finish": "STOP"
+   },
+   {
+    "in": 13665,
+    "out": 378,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_champ",
+  "dataset": "simulated",
+  "asOf": "2025-04-20",
+  "q": "Who won the College Championship and the Contingent Trophy, and with how many points?",
+  "seconds": 4.886,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "championship",
+    "args": {
+     "top": 1
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- Kiran College of Commerce (CL003) won the College Championship with 398 points.\n- Kiran College of Commerce also won the Contingent Trophy, with 156 verified attendees.\n\n**Evidence**\n- Championship standings: 1st rank Kiran College of Commerce (CL003) with 398 points.\n- Contingent Trophy: Kiran College of Commerce with 156 verified attendees.\n\n**Assumptions**\n- SIMULATED: a made-up run of the plan, not real results and not evidence for the target.\n\n**What the data can't tell**\n- Points are based on recorded competition results up to the selected date.",
+  "usage": [
+   {
+    "in": 8040,
+    "out": 13,
+    "finish": "STOP"
+   },
+   {
+    "in": 8719,
+    "out": 150,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_claims",
+  "dataset": "simulated",
+  "asOf": "2025-04-20",
+  "q": "How many exam-clash insurance claims were filed, how many were approved, and how much was refunded?",
+  "seconds": 5.186,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "payments",
+    "args": {},
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- 336 exam-clash insurance claims were filed.\n- 241 claims were approved.\n- INR 119016 was refunded.\n\n**Evidence**\n- Tool results from payments show 336 claims filed, 241 approved, and INR 119016 in approved refunds (`refund_exam`).\n\n**Assumptions**\n- SIMULATED: a made-up run of the plan, not real results and not evidence for the target.",
+  "usage": [
+   {
+    "in": 8045,
+    "out": 8,
+    "finish": "STOP"
+   },
+   {
+    "in": 8973,
+    "out": 112,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_lockin",
+  "dataset": "simulated",
+  "asOf": "2025-04-02",
+  "q": "What share of two-step pre-bookings has locked in by the deadline, and what is the verdict?",
+  "seconds": 4.072,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "betStatus",
+    "args": {
+     "betId": "B3"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n* 82.9% of two-step pre-bookings have locked in by the deadline (9,464 of 11,421 two-step pre-bookings).\n* The verdict for KPI K11 (Lock-in rate at the deadline) is **Change**, with the threshold action to \"Extend lock-in to 5 Apr for those who started\".\n\n**Evidence**\n* Locked in: 9,464 of 11,421 (82.9%) two-step pre-bookings.\n* Plan 88.9%.\n* Threshold: scale at >= 85, stop at <= 70.\n\n**Assumptions**\n* SIMULATED: a made-up run of our plan, not real results and not evidence for the target.\n* All thresholds are ASSUMPTIONS. No comparison here proves cause.",
+  "usage": [
+   {
+    "in": 8172,
+    "out": 17,
+    "finish": "STOP"
+   },
+   {
+    "in": 10188,
+    "out": 195,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_hindsight",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Which college will win the Championship and how many people will finally attend?",
+  "seconds": 3.768,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "championship",
+    "args": {
+     "top": 1
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- The College Championship standings show Amaltas College of Arts (CL027) at rank 1, but no competition results or points have been awarded yet.\n- Final attendance is not known before the event; the mid-case projection is 2,257 verified visitors.\n\n**Evidence**\n- Championship standings: Amaltas College of Arts (CL027) is currently ranked 1 with 0 points and 0 firsts (Championship tool).\n- Projected verified visitors (mid case): 2,257 (Summary).\n\n**Assumptions**\n- The projection assumes show-up rates from Settings (0.9 for the mid case) and 650 walk-ins (Summary).\n- SIMULATED: a made-up run of the plan, not real results and not evidence for the target (Championship tool, Summary).\n\n**What the data can't tell**\n- Which college will finally win the Championship, as no competition results have been recorded yet.\n- The final attendance number, which can only be known after the event takes place.",
+  "usage": [
+   {
+    "in": 8002,
+    "out": 13,
+    "finish": "STOP"
+   },
+   {
+    "in": 8287,
+    "out": 236,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_why",
+  "dataset": "simulated",
+  "asOf": "2025-04-20",
+  "q": "Why did the confirmed people who did not show up stay away?",
+  "seconds": 5.279,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "showupDrivers",
+    "args": {},
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- The data does not record why confirmed people stayed away, so the exact reasons are unknown.\n- Show-up rates varied by engagement type, ranging from 63.4% for registration starters to 79.1% for those who submitted an event question.\n- Show-up rates also varied by registration lead time, from 41.3% for those who registered 7-8 weeks out up to 72.2% for those who registered 1-2 weeks out.\n\n**Evidence**\n- There are 780 confirmed no-shows in the funnel summary.\n- By engagement type: page visit (65.2%), brochure download (63.7%), registration start (63.4%), event question submitted (79.1%), nurture email sent (63.9%), nurture email opened (64.2%), nurture email clicked (64.3%), opted out (67%), and none of question, email open/click, brochure download (63.9%).\n- By lead time: 10+ weeks out (58.7%), 9-10 weeks out (59%), 8-9 weeks out (59.5%), 7-8 weeks out (41.3%), 6-7 weeks out (62.2%), 5-6 weeks out (62.6%), 4-5 weeks out (61.5%), 3-4 weeks out (71.5%), 2-3 weeks out (70.9%), and 1-2 weeks out (72.2%).\n\n**Assumptions**\n- These differences are associations, not causes (engaged people or those registering closer to the event may have been more likely to attend anyway).\n\n**What the data can't tell**\n- The specific personal reasons why confirmed registrants did not attend (such as exams, travel issues, or scheduling conflicts) are not tracked.\n- The team could start collecting this information by sending an automated post-event survey to no-shows asking why they missed the festival.",
+  "usage": [
+   {
+    "in": 8036,
+    "out": 10,
+    "finish": "STOP"
+   },
+   {
+    "in": 8875,
+    "out": 446,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_demo_change",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Which bets show Change right now?",
+  "seconds": 3.05,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "betStatus",
+    "args": {
+     "asOf": "2025-03-15"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- Three bets show a Change verdict right now: B1 (College contingents and the CampusFest Championship), B2 (Squad Pass), and B3 (Two-step payment, early perks and exam-clash insurance).\n\n**Evidence**\n- B1 College contingents and the CampusFest Championship (headline K03): Contingent registrations are 2,345 (judged on 2025-03-15).\n- B2 Squad Pass (headline K06): Squad share is 17.1% (judged on 2025-03-15).\n- B3 Two-step payment, early perks and exam-clash insurance (headline K09): Pre-book rate is 53.1% (judged on 2025-03-15).\n\n**Assumptions**\n- SIMULATED: a made-up run of our plan, not real results and not evidence for the target.",
+  "usage": [
+   {
+    "in": 7995,
+    "out": 25,
+    "finish": "STOP"
+   },
+   {
+    "in": 10600,
+    "out": 215,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_demo_why",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Why is the Squad Pass bet on Change, and what does its rule say to do?",
+  "seconds": 3.275,
+  "requests": 2,
+  "unverified": [],
+  "tools": [
+   {
+    "name": "betStatus",
+    "args": {
+     "betId": "B2",
+     "asOf": "2025-03-15"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- The Squad Pass bet (B2) is on Change because its headline KPI (K06 Squad share) sits at 17.1%, which is above the stop threshold of 15% but below the scale threshold of 25%.\n- Its rule for this verdict says to allow one substitute before lock-in and show squad progress.\n\n**Evidence**\n- K06 Squad share: 17.1% (Squad route: 1,066 of 6,222 non-contingent registrations).\n- Thresholds: scale at >= 25%, stop at <= 15%.\n\n**Assumptions**\n- SIMULATED: a made-up run of our plan, not real results and not evidence for the target.\n- All thresholds are assumptions.",
+  "usage": [
+   {
+    "in": 8290,
+    "out": 33,
+    "finish": "STOP"
+   },
+   {
+    "in": 9456,
+    "out": 175,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_demo_task",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Create a task for the publicity team to act on that.",
+  "seconds": 3.93,
+  "requests": 2,
+  "unverified": [],
+  "tools": [],
+  "actions": [
+   {
+    "type": "task",
+    "id": "bb6e721b-3dfc-475e-84f6-758c392fa991",
+    "proposal": {
+     "title": "Review flagged publicity campaigns for cost efficiency",
+     "description": "Review the flagged publicity campaigns (C01 Campus Ambassadors, C02 Paid Social, C06 Organic Search, C07 Community Groups) where the cost per confirmed registrant exceeds 1.5x the blended average. Recommend whether to pause, reallocate, or adjust targeting to improve cost-efficiency before the event.",
+     "campaign_id": null,
+     "ticket_id": null,
+     "owner_id": null,
+     "due_date": "2025-03-22",
+     "priority": "medium",
+     "reason": "Several publicity and acquisition campaigns have flagged as stop due to high cost per confirmed registrant relative to the blended average, requiring review to protect remaining marketing budget.",
+     "evidence": [
+      "C01 Campus Ambassadors INR 441 per confirmed registrant (2.18x blended INR 202)",
+      "C02 Paid Social INR 642 per confirmed registrant (3.18x blended INR 202)",
+      "C06 Organic Search INR 392 per confirmed registrant (1.94x blended INR 202)",
+      "C07 Community Groups INR 497 per confirmed registrant (2.46x blended INR 202)"
+     ]
+    },
+    "status": "proposed"
+   }
+  ],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- I have proposed a task for the publicity team to review the flagged campaigns (C01, C02, C06, and C07) whose cost per confirmed registrant exceeds the stop threshold of 1.5x the blended average.\n\n**Evidence**\n- C01 Campus Ambassadors: INR 441 per confirmed registrant (2.18x blended INR 202).\n- C02 Paid Social: INR 642 per confirmed registrant (3.18x blended INR 202).\n- C06 Organic Search: INR 392 per confirmed registrant (1.94x blended INR 202).\n- C07 Community Groups: INR 497 per confirmed registrant (2.46x blended INR 202).\n\n**Assumptions**\n- SIMULATED: a made-up run of our plan, not real results and not evidence for the target.\n- Cost per confirmed registrant is used as a proxy for cost per actual attendee before the event.",
+  "usage": [
+   {
+    "in": 8545,
+    "out": 261,
+    "finish": "STOP"
+   },
+   {
+    "in": 8826,
+    "out": 226,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_demo_follow",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "How far is it from the Scale line?",
+  "seconds": 3.222,
+  "requests": 2,
+  "unverified": [
+   "7.9"
+  ],
+  "tools": [
+   {
+    "name": "betStatus",
+    "args": {
+     "betId": "B2",
+     "asOf": "2025-03-15"
+    },
+    "ok": true
+   }
+  ],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- The Squad Pass bet (B2) is 7.9 percentage points away from the Scale line of 25%.\n\n**Evidence**\n- K06 Squad share: 17.1% (Squad route: 1,066 of 6,222 non-contingent registrations).\n- Thresholds for K06: Scale at >= 25%, stop at <= 15%.\n\n**Assumptions**\n- SIMULATED: a made-up run of our plan, not real results and not evidence for the target.\n- All thresholds are assumptions.",
+  "usage": [
+   {
+    "in": 8542,
+    "out": 33,
+    "finish": "STOP"
+   },
+   {
+    "in": 9708,
+    "out": 132,
+    "finish": "STOP"
+   }
+  ]
+ },
+ {
+  "id": "s_demo_unknown",
+  "dataset": "simulated",
+  "asOf": "2025-03-15",
+  "q": "Which friends' groups will drop out of their squads before the fest, and why?",
+  "seconds": 2.112,
+  "requests": 1,
+  "unverified": [],
+  "tools": [],
+  "actions": [],
+  "answer": "*Data: SIMULATED run with our bets (made up, not real results)*\n\n**Answer**\n- The data does not record which specific friends' groups will drop out of their squads before the fest or why.\n\n**Evidence**\n- The dataset (simulated) tracks squad passes (225 squads listed in `betRecords`), but individual squad member dropouts and their reasons are not captured.\n\n**What the data can't tell**\n- Which squad groups will dissolve or lose members.\n- The qualitative reasons behind any squad changes.\n\n**Next step**\n- The team could start collecting squad drop-out reasons through follow-up surveys when a squad member cancels or substitutes.",
+  "usage": [
+   {
+    "in": 8759,
+    "out": 127,
+    "finish": "STOP"
+   }
+  ]
+ }
+]
