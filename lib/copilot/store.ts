@@ -51,7 +51,14 @@ function storageFor(userKey: string): ChatStorage {
   return db ? databaseChatStorage(db) : localChatStorage(userKey);
 }
 
-const EMPTY = { sessions: [] as SessionMeta[], currentId: null, messages: [] as ChatMessage[], busy: false, loading: false, notice: null, status: "" };
+/** The reason goes on screen and into the console, so a failure can be diagnosed from either. */
+function explain(summary: string, error: unknown): string {
+  console.error("chat history:", error);
+  const reason = error instanceof Error ? error.message : String(error);
+  return `${summary} Reason: ${reason.slice(0, 200)}`;
+}
+
+const EMPTY = {sessions: [] as SessionMeta[], currentId: null, messages: [] as ChatMessage[], busy: false, loading: false, notice: null, status: "" };
 
 export const useChat = create<ChatState>((set, get) => ({
   ...EMPTY,
@@ -76,8 +83,8 @@ export const useChat = create<ChatState>((set, get) => ({
       const currentId = sessions[0]?.id ?? null;
       const messages = currentId ? await own.loadMessages(currentId) : [];
       if (storage === own) set({ sessions, currentId, messages });
-    } catch {
-      if (storage === own) set({ notice: LOAD_FAILED });
+    } catch (e) {
+      if (storage === own) set({ notice: explain(LOAD_FAILED, e) });
     } finally {
       if (storage === own) set({ loading: false });
     }
@@ -101,8 +108,8 @@ export const useChat = create<ChatState>((set, get) => ({
     try {
       const messages = await own.loadMessages(id);
       if (stillWanted()) set({ messages, loading: false });
-    } catch {
-      if (stillWanted()) set({ notice: LOAD_FAILED, loading: false });
+    } catch (e) {
+      if (stillWanted()) set({ notice: explain(LOAD_FAILED, e), loading: false });
     }
   },
 
@@ -114,8 +121,8 @@ export const useChat = create<ChatState>((set, get) => ({
       await own.renameSession(id, clean);
       const sessions = await own.listSessions();
       if (storage === own) set({ sessions, notice: null });
-    } catch {
-      if (storage === own) set({ notice: CHANGE_FAILED });
+    } catch (e) {
+      if (storage === own) set({ notice: explain(CHANGE_FAILED, e) });
     }
   },
 
@@ -128,8 +135,8 @@ export const useChat = create<ChatState>((set, get) => ({
       if (storage !== own) return;
       if (get().currentId === id) set({ sessions, currentId: null, messages: [], notice: null, loading: false });
       else set({ sessions, notice: null });
-    } catch {
-      if (storage === own) set({ notice: CHANGE_FAILED });
+    } catch (e) {
+      if (storage === own) set({ notice: explain(CHANGE_FAILED, e) });
     }
   },
 
@@ -151,8 +158,9 @@ export const useChat = create<ChatState>((set, get) => ({
     const keep = async (save: () => Promise<void>) => {
       try {
         await save();
-      } catch {
-        if (storage === own) set({ notice: SAVE_FAILED });
+      } catch (e) {
+        const message = explain(SAVE_FAILED, e);
+        if (storage === own && !get().notice) set({ notice: message });
       }
     };
     const refreshList = async () => {
@@ -202,8 +210,8 @@ export const useChat = create<ChatState>((set, get) => ({
     set({ messages: messages.map((m) => (m.id === messageId ? next : m)) });
     try {
       await own.saveMessage(currentId, next);
-    } catch {
-      if (storage === own) set({ notice: SAVE_FAILED });
+    } catch (e) {
+      if (storage === own) set({ notice: explain(SAVE_FAILED, e) });
     }
   },
 }));
