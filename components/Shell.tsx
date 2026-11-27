@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Calculator, Database, Handshake, LayoutDashboard, Inbox, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
+import { BarChart3, Calculator, Database, Gauge, Handshake, LayoutDashboard, Inbox, ListChecks, Map as MapIcon, MessageSquare, RotateCcw, Settings, Target, Trophy, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
 import Login from "./Login";
 import DatasetToggle from "./DatasetToggle";
@@ -21,6 +21,9 @@ const NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/copilot", label: "Copilot", icon: MessageSquare },
   { href: "/campaigns", label: "Campaigns", icon: BarChart3 },
+  { href: "/bets", label: "Bet tracker", icon: Gauge },
+  { href: "/map", label: "Campus map", icon: MapIcon },
+  { href: "/championship", label: "Championship", icon: Trophy },
   { href: "/actions", label: "Actions", icon: Target },
   { href: "/whatif", label: "What-if", icon: Calculator },
   { href: "/people", label: "People", icon: Users },

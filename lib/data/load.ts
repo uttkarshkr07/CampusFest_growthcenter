@@ -1,7 +1,8 @@
 // Loads the dataset. Big tables come in pages and are kept in the browser, so a table is downloaded
 // again only after it has changed. The database still checks the sign-in on every load.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BetData, Dataset } from "@/lib/engine/types";
+import type { BetData, Dataset, Program } from "@/lib/engine/types";
+import shippedProgram from "./program.json";
 import { rpcName, tableName, type DatasetId } from "@/lib/datasets";
 import { PAGED_BET_TABLES, type PagedBetTable } from "./bet-spec";
 import { PAGED_TABLES, fillNames, pageRanges, toRows, type Columns, type PagedTable } from "./decode";
@@ -71,6 +72,21 @@ export interface Loaded {
   hasTickets: boolean;
 }
 
+/**
+ * The program for the original dataset: the venues and program_events tables if they have been
+ * filled (npm run data:program), otherwise the copy shipped with the app.
+ */
+async function originalProgram(db: SupabaseClient): Promise<Program> {
+  try {
+    const [venues, events] = await Promise.all([db.from("venues").select("*").order("_row_id"), db.from("program_events").select("*").order("_row_id")]);
+    const filled = (r: typeof venues) => !r.error && Array.isArray(r.data) && r.data.length > 0;
+    if (filled(venues) && filled(events)) return { venues: venues.data!, program_events: events.data! } as Program;
+  } catch {
+    /* fall back to the shipped copy */
+  }
+  return shippedProgram as unknown as Program;
+}
+
 export async function loadDataset(db: SupabaseClient, dataset: DatasetId, onProgress: (text: string) => void): Promise<Loaded> {
   const simulated = dataset === "simulated";
   const headName = rpcName(dataset, "get_app_data");
@@ -78,7 +94,7 @@ export async function loadDataset(db: SupabaseClient, dataset: DatasetId, onProg
   // before the large-data patch: one request for everything, as before
   if (!simulated && head.error && /could not find the function|does not exist/i.test(head.error.message)) {
     const all = await withRetry<Dataset>("Loading the data", () => db.rpc("get_dataset"));
-    return { data: all, hasTickets: "tickets" in all };
+    return { data: { ...all, program: await originalProgram(db) }, hasTickets: "tickets" in all };
   }
   const app = head.error || !head.data ? await withRetry<AppData>("Loading the data", () => db.rpc(headName)) : (head.data as AppData);
   const paged: readonly (PagedTable | PagedBetTable)[] = simulated ? [...PAGED_TABLES, ...PAGED_BET_TABLES] : PAGED_TABLES;
@@ -128,5 +144,6 @@ export async function loadDataset(db: SupabaseClient, dataset: DatasetId, onProg
   const rows = Object.fromEntries(PAGED_TABLES.map((t) => [t, toRows(big[t])])) as Record<PagedTable, Record<string, unknown>[]>;
   fillNames(app.tables, rows);
   const bets = simulated ? ({ ...app.bets, ...Object.fromEntries(PAGED_BET_TABLES.map((t) => [t, toRows(big[t])])) } as BetData) : undefined;
-  return { data: { ...app.tables, ...rows, ...(bets ? { bets } : {}) } as unknown as Dataset, hasTickets: true };
+  const program = bets ? {} : { program: await originalProgram(db) };
+  return { data: { ...app.tables, ...rows, ...(bets ? { bets } : {}), ...program } as unknown as Dataset, hasTickets: true };
 }

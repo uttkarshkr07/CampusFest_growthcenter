@@ -1,5 +1,6 @@
 // Strict hindsight. The copilot works on a copy of the data in which nothing later than the
 // selected date exists, so a tool cannot leak it even if its own date filter misses something.
+import { betsAsOf } from "./betview";
 import { ticketsAt } from "./tickets";
 import { istDay, resolveAsOf, toMs, endOfIstDay } from "./time";
 import type { Dataset, TaskRow } from "./types";
@@ -63,9 +64,8 @@ export function viewAsOf(data: Dataset, asOf: string): Dataset {
       simulation_note: t.simulation_note,
     })),
     ticket_events: ticketsAt(data, asOf).flatMap((t) => t.events),
-    // left out until each bet table has its own as-of rule (tracking_spec "Global rules"),
-    // so no later booking or payment can reach the copilot
-    bets: undefined,
+    // each bet table has its own rule, so no later booking or payment can reach the copilot
+    bets: data.bets && betsAsOf(data.bets, asOf),
   };
   byDate.set(ms, view);
   return view;

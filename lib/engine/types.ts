@@ -250,9 +250,13 @@ export interface Dataset {
   change_log: ChangeLogRow[];
   tickets: TicketRow[];
   ticket_events: TicketEventRow[];
-  /** bet and program records: the simulated dataset only. Nothing calculates from them yet. */
+  /** bet and program records: the simulated dataset only */
   bets?: BetData;
+  /** the festival program for the original dataset, which has no bet records */
+  program?: Program;
 }
+
+export type Program = Pick<BetData, "venues" | "program_events">;
 
 export const SOURCE_TABLES = [
   "event",

@@ -10,6 +10,10 @@ export const APP_TARGETS = {
   person: { help: "one person's timeline (id = person id)", href: (id?: string) => (id ? `/people/${encodeURIComponent(id)}` : "/people") },
   actions: { help: "full lists of people to act on", href: (id?: string) => `/actions${id ? `?cohort=${id}` : ""}` },
   whatif: { help: "the what-if simulator screen", href: () => "/whatif" },
+  venue: { help: "a venue on the campus map: its sessions and seats (id = venue id)", href: (id?: string) => `/map${id ? `?focus=${id}` : ""}` },
+  event: { help: "a session on the campus map (id = program event id)", href: (id?: string) => `/map${id ? `?focus=${id}` : ""}` },
+  bet: { help: "the bet tracker: KPIs, verdicts and thresholds (id = bet id B1 to B5, or PLAN)", href: (id?: string) => `/bets${id ? `?focus=${id}` : ""}` },
+  college: { help: "the College Championship board (id = college id)", href: (id?: string) => `/championship${id ? `?focus=${id}` : ""}` },
 } as const;
 
 export type AppTarget = keyof typeof APP_TARGETS;

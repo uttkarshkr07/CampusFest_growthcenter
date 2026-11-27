@@ -504,7 +504,7 @@
  },
  {
   "name": "openInApp",
-  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); ticket = tickets between teams: raise, comment, accept, decline or edit (id = ticket id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen.",
+  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); ticket = tickets between teams: raise, comment, accept, decline or edit (id = ticket id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen; venue = a venue on the campus map: its sessions and seats (id = venue id); event = a session on the campus map (id = program event id); bet = the bet tracker: KPIs, verdicts and thresholds (id = bet id B1 to B5, or PLAN); college = the College Championship board (id = college id).",
   "parameters": {
    "type": "object",
    "properties": {
@@ -520,7 +520,11 @@
       "settings",
       "person",
       "actions",
-      "whatif"
+      "whatif",
+      "venue",
+      "event",
+      "bet",
+      "college"
      ]
     },
     "id": {

@@ -47,6 +47,8 @@ async function simulatedStatus(db: NonNullable<ReturnType<typeof getSupabase>>):
   return "unchecked";
 }
 
+export type ThresholdPatch = Partial<{ scale_at: number; stop_at: number; min_sample: number; check_on: string | null }>;
+
 export interface TicketInput {
   title: string;
   details: string;
@@ -86,6 +88,8 @@ interface State {
   updateTask: (id: string, patch: Partial<TaskRow>) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
   setSetting: (key: string, value: number) => Promise<boolean>;
+  /** a bet threshold (an assumption). Only the simulated dataset has them. */
+  updateThreshold: (rowId: number, patch: ThresholdPatch) => Promise<boolean>;
   /** false until the database has the ticket tables */
   ticketsReady: boolean;
   /** ticket changes are dated with the selected date; the database checks the team and the status step */
@@ -334,6 +338,21 @@ export const useStore = create<State>((set, get) => {
         await log([{ table_name: "settings", row_ref: key, field: "value", old_value: before?.value ?? null, new_value: value }]);
         return true;
       }, "Setting saved. Projections and flags have been recalculated.");
+      return !!r;
+    },
+
+    updateThreshold: async (rowId, patch) => {
+      const r = await guard(async () => {
+        const db = getSupabase()!;
+        const rows = get().data!.bets!.bet_thresholds;
+        const before = rows.find((x) => x._row_id === rowId);
+        const { data, error } = await db.from(table("bet_thresholds")).update(patch).eq("_row_id", rowId).select().single();
+        if (error) throw new Error(error.message);
+        // a new bets object, so every figure worked out from the old one is dropped
+        replaceData({ bets: { ...get().data!.bets!, bet_thresholds: rows.map((x) => (x._row_id === rowId ? data : x)) } });
+        await log(Object.entries(patch).map(([field, value]) => ({ table_name: "bet_thresholds", row_ref: String(before?.threshold_id ?? rowId), field, old_value: before?.[field] ?? null, new_value: value ?? null })));
+        return true;
+      }, "Threshold saved. Verdicts have been recalculated.");
       return !!r;
     },
 

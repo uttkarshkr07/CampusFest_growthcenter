@@ -184,8 +184,9 @@ describe("chat history", () => {
 });
 
 describe("the copilot's view", () => {
-  it("holds no bet records yet, whatever the selected date", () => {
+  it("holds no bet record from after the selected date", () => {
     const data = { ...loadSeed(), bets: { passes: [{ pass_id: "X", booked_at: "2025-04-01T10:00:00+05:30" }] } as never };
-    expect(viewAsOf(data, "2025-03-15").bets).toBeUndefined();
+    expect(viewAsOf(data, "2025-03-15").bets!.passes).toEqual([]);
+    expect(viewAsOf(data, "2025-04-01").bets!.passes).toHaveLength(1);
   });
 });
