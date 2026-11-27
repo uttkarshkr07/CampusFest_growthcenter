@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Calculator, Database, Handshake, LayoutDashboard, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
+import { BarChart3, Calculator, Database, Handshake, LayoutDashboard, Inbox, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
 import Login from "./Login";
 import { AUTH_ON } from "@/lib/auth/config";
 import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
 import { useSponsor } from "@/lib/sponsor/store";
+import { awaiting, TICKET_TEAMS, ticketsAt } from "@/lib/engine/tickets";
 import { STORY, useStore } from "@/lib/store";
 import { Button, Modal, Spinner } from "./ui";
 import { fmtDate } from "@/lib/format";
@@ -22,6 +23,7 @@ const NAV = [
   { href: "/whatif", label: "What-if", icon: Calculator },
   { href: "/people", label: "People", icon: Users },
   { href: "/sponsors", label: "Sponsors", icon: Handshake },
+  { href: "/tickets", label: "Tickets", icon: Inbox },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/data", label: "Data", icon: Database },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -34,6 +36,8 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   const { status: authStatus, me, init: initAuth, signOut } = useAuth();
   const canReset = !me || me.isReviewer;
+  const data = useStore((s) => s.data);
+  const waiting = data ? awaiting(ticketsAt(data, asOf), !me || me.isReviewer ? TICKET_TEAMS : me.teams).length : 0;
 
   useEffect(() => {
     void initAuth();
@@ -75,6 +79,11 @@ export default function Shell({ children }: { children: ReactNode }) {
             return (
               <Link key={href} href={href} className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] ${active ? "bg-brand-soft font-semibold text-brand" : "text-slate-700 hover:bg-slate-50"}`}>
                 <Icon className="h-4 w-4" /> {label}
+                {href === "/tickets" && waiting > 0 && (
+                  <span className="ml-auto rounded-full bg-bad px-1.5 text-[11px] font-semibold text-white" title={`${waiting} waiting for an answer from ${me && !me.isReviewer ? "your team" : "a team"}`}>
+                    {waiting}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -142,7 +151,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset demo data?">
         <p className="text-[13px] text-slate-700">
-          This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. Copilot chats are kept. It cannot be undone.
+          This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. Tickets and their comments are cleared, and the one sample ticket is restored. Copilot chats are kept. It cannot be undone.
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button onClick={() => setConfirmReset(false)}>Cancel</Button>

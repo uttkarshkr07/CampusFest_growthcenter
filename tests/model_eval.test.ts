@@ -54,9 +54,19 @@ const CASES: Case[] = [
   },
   { id: "edit_request", asOf: MAR15, q: "Change the paid social campaign's budget to INR 50,000." },
   { id: "task", asOf: MAR15, q: "Create a task for someone to follow up with the waitlisted people this week." },
+  { id: "ticket_read", asOf: MAR15, q: "What has sponsorship asked publicity to do, and by when?", edit: withSampleTicket },
+  { id: "ticket_task", asOf: MAR15, q: "Create a task for the first thing publicity has to deliver on the hackathon ticket.", edit: withSampleTicket },
   { id: "demo_track", asOf: MAR15, q: "Are we on track for the visitor goal, and what is the biggest risk right now?" },
   { id: "demo_move", asOf: MAR15, after: "demo_track", q: "What if we move INR 20,000 from paid social to college partnerships?" },
 ];
+
+/** The sample ticket, with its text read from the database file, for asking about tickets before or after the patch. */
+function withSampleTicket(d: E.Dataset) {
+  const sql = readFileSync(path.resolve(__dirname, "../supabase/patch_session3d_tickets.sql"), "utf8");
+  const id = "00000000-0000-4000-8000-000000000001";
+  d.tickets = [{ id, title: "RISA Labs on board for an AI x Health Hackathon: publicity needed", details: sql.split("$text$")[1].trim(), from_team: "sponsorship", to_team: "publicity", requester_id: "T01", assignee_id: "T03", priority: "high", status: "open", raised_on: "2025-03-15", needed_by: "2025-03-22", simulation_note: "SIMULATED SCENARIO: RISA Labs has not agreed to this." }];
+  d.ticket_events = [{ id: 1, ticket_id: id, kind: "raised", body: null, before: null, actor_name: "Riya Kapoor", story_date: "2025-03-15" }];
+}
 
 function loadEnvLocal() {
   for (const line of readFileSync(path.resolve(__dirname, "../.env.local"), "utf8").split(/\r?\n/)) {

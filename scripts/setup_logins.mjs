@@ -144,6 +144,49 @@ else {
   }
 }
 
+// tickets: all changes go through database functions that check the team, the status step and the date.
+// Every attempt below uses a temporary ticket, never the sample one, so a broken rule cannot change it.
+const TEMP_TICKET = "ROLE CHECK (temporary)";
+const ticketTable = await admin.from("tickets").select("id", { count: "exact", head: true });
+const hasTickets = !ticketTable.error;
+if (!hasTickets) console.log("Ticket tables not created yet: their checks are skipped.");
+else if (clients.reviewer && clients.meera && clients.arjun && clients.riya && clients.dev) {
+  const { reviewer, meera, arjun, riya, dev } = clients;
+  await admin.from("tickets").delete().eq("title", TEMP_TICKET);
+  for (const [name, db] of [["Reviewer", reviewer], ["Dev", dev]]) {
+    const read = await db.from("tickets").select("id");
+    check(!read.error, `${name}: can read tickets (${read.error?.message})`);
+  }
+  const direct = await reviewer.from("tickets").insert({ title: TEMP_TICKET, from_team: "sponsorship", to_team: "publicity", raised_on: "2025-04-19" }).select("id");
+  check(!!direct.error, "Reviewer: must not write the ticket table directly");
+  const raise = (db, from) => db.rpc("raise_ticket", { p_title: TEMP_TICKET, p_details: "", p_from: from, p_to: from === "publicity" ? "events" : "publicity", p_priority: "low", p_needed_by: null, p_assignee: null, p_on: "2025-04-19" });
+  const wrongTeam = await raise(arjun, "sponsorship");
+  check(!!wrongTeam.error, "Arjun: must not raise a ticket for sponsorship");
+  const made = await raise(riya, "sponsorship");
+  check(!made.error && !!made.data, `Riya: can raise a sponsorship ticket (${made.error?.message})`);
+  if (made.data) {
+    const id = made.data;
+    const move = (db, status, on = "2025-04-19") => db.rpc("move_ticket", { p_id: id, p_status: status, p_note: null, p_on: on });
+    const directMove = await meera.from("tickets").update({ status: "done" }).eq("id", id).select("id");
+    check(!!directMove.error || directMove.data.length === 0, "Meera: must not change a ticket directly");
+    check(!!(await move(dev, "accepted")).error, "Dev: must not answer a ticket sent to publicity");
+    check(!!(await move(clients.kabir ?? dev, "accepted")).error, "Kabir (sender's team only): must not answer it");
+    check(!!(await move(arjun, "done")).error, "Arjun: an open ticket cannot jump to done");
+    check(!!(await move(arjun, "accepted", "2025-04-18")).error, "Arjun: cannot answer before the ticket was raised");
+    const ok = await move(arjun, "accepted");
+    check(!ok.error, `Arjun: can accept a publicity ticket (${ok.error?.message})`);
+    const said = await dev.rpc("comment_ticket", { p_id: id, p_body: "role check", p_on: "2025-04-19" });
+    check(!said.error, `Dev: can comment on any ticket (${said.error?.message})`);
+    const edit = (db) => db.rpc("edit_ticket", { p_id: id, p_title: TEMP_TICKET, p_details: "edited", p_priority: "low", p_needed_by: null, p_on: "2025-04-19" });
+    check(!!(await edit(arjun)).error, "Arjun: must not edit another team's request");
+    const own = await edit(riya);
+    check(!own.error, `Riya: can edit her team's request (${own.error?.message})`);
+    const outsider = await createClient(url, anonKey, noSession).rpc("comment_ticket", { p_id: id, p_body: "x", p_on: "2025-04-19" });
+    check(!!outsider.error, "Not signed in: cannot comment on a ticket");
+  }
+  await admin.from("tickets").delete().eq("title", TEMP_TICKET);
+}
+
 const visitor = createClient(url, anonKey, noSession);
 const open = await visitor.rpc("get_dataset");
 const locked = !!open.error;
@@ -157,6 +200,10 @@ if (locked) {
 if (hasSponsor) {
   const peekSponsor = await visitor.from("sponsor_data").select("sheet");
   check(!!peekSponsor.error || peekSponsor.data.length === 0, "Not signed in: cannot read sponsor records");
+}
+if (hasTickets) {
+  const peekTickets = await visitor.from("tickets").select("id");
+  check(!!peekTickets.error || peekTickets.data.length === 0, "Not signed in: cannot read tickets");
 }
 if (expectLocked) check(locked, "Not signed in: get_dataset must be refused (has part B been run?)");
 

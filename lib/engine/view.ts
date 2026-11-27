@@ -1,5 +1,6 @@
 // Strict hindsight. The copilot works on a copy of the data in which nothing later than the
 // selected date exists, so a tool cannot leak it even if its own date filter misses something.
+import { ticketsAt } from "./tickets";
 import { istDay, resolveAsOf, toMs, endOfIstDay } from "./time";
 import type { Dataset, TaskRow } from "./types";
 
@@ -46,6 +47,22 @@ export function viewAsOf(data: Dataset, asOf: string): Dataset {
     tasks: data.tasks.filter((t) => taskVisible(t, day || istDay(ms))),
     // task entries in the change log carry task titles, which can quote later analysis
     change_log: data.change_log.filter((c) => c.table_name !== "tasks"),
+    // each ticket as it stood then: later status changes, comments and edits are removed
+    tickets: ticketsAt(data, asOf).map((t) => ({
+      id: t.id,
+      title: t.title,
+      details: t.details,
+      from_team: t.from_team,
+      to_team: t.to_team,
+      requester_id: t.requester_id,
+      assignee_id: t.assignee_id,
+      priority: t.priority,
+      status: t.status,
+      raised_on: t.raised_on,
+      needed_by: t.needed_by,
+      simulation_note: t.simulation_note,
+    })),
+    ticket_events: ticketsAt(data, asOf).flatMap((t) => t.events),
   };
   byDate.set(ms, view);
   return view;

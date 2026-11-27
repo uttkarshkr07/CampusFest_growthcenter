@@ -156,12 +156,14 @@ function ActionCard({ message, action }: { message: ChatMessage; action: ChatAct
   const p: TaskProposal = action.proposal;
   const owner = data?.team.find((t) => t.owner_id === p.owner_id);
   const campaign = data?.campaigns.find((c) => c.campaign_id === p.campaign_id);
+  const ticket = data?.tickets.find((t) => t.id === p.ticket_id);
   const review = () =>
     setDraft(
       blankTask(message.asOf, {
         title: p.title,
         description: p.description,
         campaign_id: campaign?.campaign_id ?? null,
+        ticket_id: ticket?.id ?? null,
         owner_id: owner?.owner_id ?? null,
         due_at: `${p.due_date && p.due_date >= message.asOf ? p.due_date : addDays(message.asOf, 3)}T18:00:00+05:30`,
         priority: p.priority,
@@ -176,6 +178,12 @@ function ActionCard({ message, action }: { message: ChatMessage; action: ChatAct
       </div>
       <div className="mt-1 font-semibold">{p.title}</div>
       {p.reason && <div className="text-[12px] text-slate-700">Why: {p.reason}</div>}
+      {ticket && (
+        <div className="text-[12px] text-slate-700">
+          For ticket: {ticket.title}
+          {ticket.simulation_note && <div className="font-semibold text-warn">{ticket.simulation_note}</div>}
+        </div>
+      )}
       <div className="mt-0.5 text-[12px] text-muted">
         {owner ? owner.owner_name : "Unassigned"} · {campaign ? campaign.campaign_name : "No campaign"} · {p.priority} priority
       </div>

@@ -1,13 +1,20 @@
 "use client";
 
 import { create } from "zustand";
-import type { ChangeLogRow, Dataset, SourceTable, TaskRow, CampaignPlanRow, TargetRow, CampaignRow } from "@/lib/engine/types";
+import type { ChangeLogRow, Dataset, SourceTable, TaskRow, CampaignPlanRow, TargetRow, CampaignRow, TicketStatus } from "@/lib/engine/types";
 import { getSupabase } from "@/lib/supabase";
 
 export const DEFAULT_AS_OF = "2025-04-20";
 export const STORY = { min: "2025-01-15", max: "2025-04-20", today: "2025-03-15", day1: "2025-04-12", post: "2025-04-20" };
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+export interface TicketInput {
+  title: string;
+  details: string;
+  priority: "low" | "medium" | "high";
+  neededBy: string | null;
+}
 
 interface State {
   data: Dataset | null;
@@ -30,10 +37,26 @@ interface State {
   updateTask: (id: string, patch: Partial<TaskRow>) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
   setSetting: (key: string, value: number) => Promise<boolean>;
+  /** false until the database has the ticket tables */
+  ticketsReady: boolean;
+  /** ticket changes are dated with the selected date; the database checks the team and the status step */
+  raiseTicket: (t: TicketInput & { fromTeam: string; toTeam: string; assigneeId: string | null }) => Promise<boolean>;
+  editTicket: (id: string, t: TicketInput) => Promise<boolean>;
+  moveTicket: (id: string, status: TicketStatus, note: string | null) => Promise<boolean>;
+  commentTicket: (id: string, body: string) => Promise<boolean>;
   resetDemo: () => Promise<boolean>;
 }
 
-const EMPTY_APP = { campaign_plan: [], team: [], tasks: [], settings: [], change_log: [] };
+const EMPTY_APP = { campaign_plan: [], team: [], tasks: [], settings: [], change_log: [], tickets: [], ticket_events: [] };
+
+/** before the ticket patch, tasks have no ticket or story date columns */
+function taskColumns<T extends object>(row: T, ready: boolean): T {
+  if (ready) return row;
+  const rest = { ...row } as Record<string, unknown>;
+  delete rest.ticket_id;
+  delete rest.story_date;
+  return rest as T;
+}
 
 // a blocked change comes back either as a policy error or as "no row changed"
 const BLOCKED = /row-level security|multiple \(or no\) rows|coerce the result to a single/i;
@@ -64,6 +87,20 @@ export const useStore = create<State>((set, get) => {
 
   const replaceData = (patch: Partial<Dataset>) => set((s) => (s.data ? { data: { ...s.data, ...patch } } : {}));
 
+  /** a ticket change runs in the database, then tickets are read back */
+  async function ticketChange(fn: string, args: Record<string, unknown>, okMsg: string) {
+    const done = await guard(async () => {
+      const db = getSupabase()!;
+      const { error } = await db.rpc(fn, args);
+      if (error) throw new Error(error.message);
+      const [tickets, events] = await Promise.all([db.from("tickets").select("*").order("raised_on").order("created_at"), db.from("ticket_events").select("*").order("id")]);
+      if (tickets.error || events.error) throw new Error("Saved, but the tickets could not be read back. Reload the page.");
+      replaceData({ tickets: tickets.data, ticket_events: events.data } as Partial<Dataset>);
+      return true;
+    }, okMsg);
+    return !!done;
+  }
+
   return {
     data: null,
     status: "idle",
@@ -71,6 +108,7 @@ export const useStore = create<State>((set, get) => {
     asOf: DEFAULT_AS_OF,
     saving: false,
     toast: null,
+    ticketsReady: false,
     setAsOf: (d) => set({ asOf: d }),
     notify: (msg) => set({ toast: msg }),
     clear: () => set({ data: null, status: "idle", error: null }),
@@ -87,7 +125,7 @@ export const useStore = create<State>((set, get) => {
         set({ status: "error", error: error?.message ?? "Empty response from get_dataset()" });
         return;
       }
-      set({ data: { ...EMPTY_APP, ...(data as Dataset) }, status: "ready" });
+      set({ data: { ...EMPTY_APP, ...(data as Dataset) }, status: "ready", ticketsReady: "tickets" in (data as object) });
     },
 
     updateSourceRow: async (table, rowId, patch, rowRef) => {
@@ -148,7 +186,7 @@ export const useStore = create<State>((set, get) => {
     createTask: async (t) =>
       guard(async () => {
         const db = getSupabase()!;
-        const { data, error } = await db.from("tasks").insert(t).select().single();
+        const { data, error } = await db.from("tasks").insert(taskColumns(t, get().ticketsReady)).select().single();
         if (error) throw new Error(error.message);
         replaceData({ tasks: [...get().data!.tasks, data as TaskRow] });
         await log([{ table_name: "tasks", row_ref: (data as TaskRow).id, field: "(created)", old_value: null, new_value: { title: t.title, origin: t.origin } }]);
@@ -159,7 +197,7 @@ export const useStore = create<State>((set, get) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
         const before = get().data!.tasks.find((x) => x.id === id);
-        const { data, error } = await db.from("tasks").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+        const { data, error } = await db.from("tasks").update(taskColumns({ ...patch, updated_at: new Date().toISOString() }, get().ticketsReady)).eq("id", id).select().single();
         if (error) throw new Error(error.message);
         replaceData({ tasks: get().data!.tasks.map((x) => (x.id === id ? (data as TaskRow) : x)) });
         await log(Object.keys(patch).map((field) => ({ table_name: "tasks", row_ref: id, field, old_value: (before as unknown as Record<string, unknown>)?.[field] ?? null, new_value: (patch as Record<string, unknown>)[field] ?? null })));
@@ -195,6 +233,12 @@ export const useStore = create<State>((set, get) => {
       }, "Setting saved. Projections and flags have been recalculated.");
       return !!r;
     },
+
+    raiseTicket: async (t) =>
+      ticketChange("raise_ticket", { p_title: t.title, p_details: t.details, p_from: t.fromTeam, p_to: t.toTeam, p_priority: t.priority, p_needed_by: t.neededBy, p_assignee: t.assigneeId, p_on: get().asOf }, "Ticket raised."),
+    editTicket: async (id, t) => ticketChange("edit_ticket", { p_id: id, p_title: t.title, p_details: t.details, p_priority: t.priority, p_needed_by: t.neededBy, p_on: get().asOf }, "Request updated."),
+    moveTicket: async (id, status, note) => ticketChange("move_ticket", { p_id: id, p_status: status, p_note: note, p_on: get().asOf }, "Ticket updated."),
+    commentTicket: async (id, body) => ticketChange("comment_ticket", { p_id: id, p_body: body, p_on: get().asOf }, "Comment added."),
 
     resetDemo: async () => {
       const r = await guard(async () => {

@@ -9,7 +9,7 @@ import { OPEN_IN_APP, PROPOSE_TASK, SPONSOR_TOOL } from "./tool-defs.names";
 
 export const MODEL_TOOLS: ToolName[] = [
   "funnel", "targetsVsActuals", "campaignTable", "flags", "projection", "pace", "momentum", "showupDrivers",
-  "query", "actionList", "whatIf", "searchPeople", "person", "tasks", "dataHealth", "eventInfo",
+  "query", "actionList", "whatIf", "searchPeople", "person", "tasks", "tickets", "dataHealth", "eventInfo",
 ];
 
 export { PROPOSE_TASK, OPEN_IN_APP };
@@ -76,6 +76,7 @@ export function buildDeclarations(): Declaration[] {
           title: { type: "string", description: "Short action, under 90 characters." },
           description: { type: "string", description: "What to do and how success will be checked." },
           campaignId: { type: "string", description: "Campaign id this is about, if any." },
+          ticketId: { type: "string", description: "Id of the ticket this task answers, if any, copied from the tickets tool." },
           ownerId: { type: "string", description: "owner_id from the team list, if clear." },
           dueDate: { type: "string", description: "YYYY-MM-DD, after the selected date." },
           priority: { type: "string", enum: ["low", "medium", "high"] },

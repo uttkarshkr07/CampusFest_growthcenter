@@ -63,6 +63,7 @@ export interface TaskProposal {
   title: string;
   description: string;
   campaign_id: string | null;
+  ticket_id?: string | null;
   owner_id: string | null;
   due_date: string | null;
   priority: "low" | "medium" | "high";

@@ -23,5 +23,7 @@ export function loadSeed(): Dataset {
     tasks: [],
     settings: [],
     change_log: [],
+    tickets: [],
+    ticket_events: [],
   };
 }

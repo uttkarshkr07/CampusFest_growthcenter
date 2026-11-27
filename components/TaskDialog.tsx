@@ -21,6 +21,8 @@ export function blankTask(asOf: string, patch: Partial<TaskDraft> = {}): TaskDra
     priority: "medium",
     origin: "manual",
     origin_ref: null,
+    ticket_id: null,
+    story_date: asOf,
     ...patch,
   };
 }
@@ -33,6 +35,7 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
   if (!open || !t || !data) return null;
   const set = (patch: Partial<TaskDraft>) => setT({ ...t, ...patch });
   const ref = t.origin_ref as Record<string, unknown> | null;
+  const ticket = t.ticket_id ? data.tickets.find((x) => x.id === t.ticket_id) : null;
   // an existing task needs permission for its current owner as well as the new one
   const deniedOwner = [initial?.id ? initial.owner_id : null, t.owner_id].find((id) => !canEditTask(me, id, data.team));
   const blocked = deniedOwner ? taskBlockReason(deniedOwner, data.team) : null;
@@ -51,6 +54,8 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
       priority: t.priority,
       origin: t.origin,
       origin_ref: t.origin_ref,
+      ticket_id: t.ticket_id ?? null,
+      story_date: t.story_date ?? null,
     };
     const ok = id ? await updateTask(id, rest) : await createTask(rest);
     if (ok) {
@@ -111,6 +116,12 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
             <input className={`${inputCls} bg-slate-50`} value={t.origin} readOnly />
           </Field>
         </div>
+        {ticket && (
+          <div className="rounded-md border border-line p-2.5 text-[12px]">
+            Answers the ticket <span className="font-semibold">{ticket.title}</span>
+            {ticket.simulation_note && <div className="mt-1 font-semibold text-warn">{ticket.simulation_note}</div>}
+          </div>
+        )}
         {ref && (
           <div className="rounded-md bg-slate-50 p-3 text-[12px] text-slate-700">
             <div className="mb-1 font-semibold">Why this task exists (snapshot at creation)</div>

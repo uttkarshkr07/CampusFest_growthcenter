@@ -60,6 +60,12 @@ export function historyContents(history: ChatMessage[], selectedDate: string): C
   });
 }
 
+/** labels carried by the simulated tickets a tool returned, by ticket id */
+function simulatedLabels(result: unknown): [string, string][] {
+  const tickets = (result as { value?: { tickets?: { id?: unknown; label?: unknown }[] } } | null | undefined)?.value?.tickets;
+  return Array.isArray(tickets) ? tickets.flatMap((t): [string, string][] => (typeof t.label === "string" && t.label ? [[String(t.id), t.label]] : [])) : [];
+}
+
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 function toProposal(args: Record<string, unknown>): TaskProposal | null {
@@ -71,6 +77,7 @@ function toProposal(args: Record<string, unknown>): TaskProposal | null {
     title,
     description: str(args.description, 2000),
     campaign_id: str(args.campaignId, 40) || null,
+    ticket_id: str(args.ticketId, 40) || null,
     owner_id: str(args.ownerId, 40) || null,
     due_date: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : null,
     priority,
@@ -95,6 +102,7 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
   const contents: Content[] = [...historyContents(input.history, input.selectedDate), { role: "user", parts: [{ text: brief }, { text: `QUESTION: ${input.question}` }] }];
 
   const traces: ToolTrace[] = [];
+  const simulated = new Map<string, string>();
   const actions: ChatAction[] = [];
   const texts: string[] = [];
   let model = "";
@@ -144,6 +152,7 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
         const result = out.result as { value?: unknown; basis?: string[]; caveats?: string[] } | undefined;
         traces.push({ name: call.name, args, asOfUsed: out.asOfUsed, ok: out.ok, basis: result?.basis ?? [], caveats: result?.caveats ?? [], value: result?.value ?? null, error: out.error });
         response = out.ok ? compactResult(result) : { error: out.error };
+        if (call.name === "tickets" && out.ok) for (const [id, label] of simulatedLabels(result)) simulated.set(id, label);
       }
       responses.push({ functionResponse: { name: call.name, ...(call.id ? { id: call.id } : {}), response: { result: response } } });
     }
@@ -175,6 +184,15 @@ async function attempt(input: TurnInput, modelIndex: number): Promise<ChatMessag
     .trim();
   if (!answer && actions.length) answer = actions.some((a) => a.type === "task") ? "I drafted a task below. Review it, edit anything, then confirm. Nothing is saved yet." : "I can't make that change myself. Use the button below.";
   if (!answer) throw new ModelError("upstream", "The model returned an empty reply. Please try again.");
+
+  // The model is told to repeat the label, but that is not left to chance: if it read a simulated
+  // ticket, the answer and any task drafted for that ticket carry the label.
+  for (const label of new Set(simulated.values())) if (!answer.includes(label)) answer = `**${label}**\n\n${answer}`;
+  for (const a of actions) {
+    if (a.type !== "task") continue;
+    const label = a.proposal.ticket_id ? simulated.get(a.proposal.ticket_id) : undefined;
+    if (label && !a.proposal.description.includes(label)) a.proposal.description = `${label}\n\n${a.proposal.description}`.trim();
+  }
 
   const sources: unknown[] = [input.summary, input.context, input.question, ...traces.flatMap((t) => [t.value, t.basis, t.caveats, t.args]), ...historyContents(input.history, input.selectedDate).map((c) => c.parts)];
   return {

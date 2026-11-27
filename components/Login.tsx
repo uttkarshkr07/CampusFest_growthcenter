@@ -5,11 +5,11 @@ import { useAuth } from "@/lib/auth/store";
 import { ACCOUNTS, type Account } from "@/lib/auth/permissions";
 
 function canDo(a: Account): string {
-  if (a.reviewer) return "Can edit all data and tasks, and reset the demo.";
+  if (a.reviewer) return "Can edit all data, tasks and tickets, and reset the demo.";
   const parts: string[] = [];
   if (a.teams.includes("publicity")) parts.push("campaigns, marketing spend, targets and settings");
   if (a.teams.includes("events")) parts.push("gate check-ins");
-  parts.push(`${a.teams.join(" and ")} tasks`);
+  parts.push(`${a.teams.join(" and ")} tasks and tickets`);
   return `Can edit ${parts.join("; ")}.`;
 }
 

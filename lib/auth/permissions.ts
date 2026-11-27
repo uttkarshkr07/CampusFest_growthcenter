@@ -52,6 +52,15 @@ export function whoCanEdit(thing: EditableThing): string {
   return `Only ${ACCOUNTS.filter((a) => a.teams.includes(team)).map(firstName).join(", ")} (${team}) or the Reviewer can edit this.`;
 }
 
+/** May this account act for a team (raise, decide or edit its tickets)? Any organiser may comment. */
+export function canActFor(me: Viewer, team: string): boolean {
+  return !me || me.isReviewer || (me.teams as string[]).includes(team);
+}
+
+export function whoCanActFor(team: string): string {
+  return `Only ${ACCOUNTS.filter((a) => (a.teams as string[]).includes(team)).map(firstName).join(", ")} (${team}) or the Reviewer can do this.`;
+}
+
 export interface Owner {
   owner_id: string;
   owner_name: string;

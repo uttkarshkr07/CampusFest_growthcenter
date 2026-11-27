@@ -339,6 +339,40 @@
   }
  },
  {
+  "name": "tickets",
+  "description": "Requests between the festival's own teams (publicity, sponsorship, events): who asked whom for what, status, needed-by date, history and linked tasks. Pass ticketId, or filter to three tickets or fewer, to read the details. You cannot create or change tickets.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "asOf": {
+     "type": "string",
+     "description": "Optional YYYY-MM-DD; default is the selected date."
+    },
+    "team": {
+     "type": "string",
+     "enum": [
+      "publicity",
+      "sponsorship",
+      "events"
+     ]
+    },
+    "status": {
+     "type": "string",
+     "enum": [
+      "open",
+      "accepted",
+      "declined",
+      "in_progress",
+      "done"
+     ]
+    },
+    "ticketId": {
+     "type": "string"
+    }
+   }
+  }
+ },
+ {
   "name": "dataHealth",
   "description": "Data quality: duplicate IDs per table, conflicting duplicates, denied/pending/unverified scans, non-external admissions, negative spend rows, unattributed visitors.",
   "parameters": {
@@ -428,6 +462,10 @@
      "type": "string",
      "description": "Campaign id this is about, if any."
     },
+    "ticketId": {
+     "type": "string",
+     "description": "Id of the ticket this task answers, if any, copied from the tickets tool."
+    },
     "ownerId": {
      "type": "string",
      "description": "owner_id from the team list, if clear."
@@ -466,7 +504,7 @@
  },
  {
   "name": "openInApp",
-  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen.",
+  "description": "Show a 'Take me there' button for a change you cannot make yourself. Targets: campaign = a campaign: edit status or budget (id = campaign id); task = tasks: edit status, owner, due date or delete (id = task id); ticket = tickets between teams: raise, comment, accept, decline or edit (id = ticket id); daily_marketing = daily marketing rows: spend and traffic (id = campaign id); targets = goal versions; checkins = gate scan rows (id = person id); settings = assumptions and decision thresholds; person = one person's timeline (id = person id); actions = full lists of people to act on; whatif = the what-if simulator screen.",
   "parameters": {
    "type": "object",
    "properties": {
@@ -475,6 +513,7 @@
      "enum": [
       "campaign",
       "task",
+      "ticket",
       "daily_marketing",
       "targets",
       "checkins",

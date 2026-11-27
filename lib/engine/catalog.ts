@@ -4,6 +4,8 @@ import * as M from "./metrics";
 import { query, QUERY_DATASETS, QUERY_DEFS, QUERY_OPS, type QuerySpec } from "./query";
 import { actionList, COHORT_KEYS, type Cohort } from "./actions";
 import { whatIf, type WhatIfSpec } from "./whatif";
+import { TICKET_STATUSES, TICKET_TEAMS, ticketsView, type TicketTeam } from "./tickets";
+import type { TicketStatus } from "./types";
 import { viewAsOf } from "./view";
 import { resolveAsOf } from "./time";
 
@@ -92,6 +94,11 @@ export const catalog = {
       overdueOnly: z.boolean().optional(),
     }),
     run: (d: Dataset, a: { asOf: string; status?: string; campaign_id?: string; owner_id?: string; overdueOnly?: boolean }) => M.tasksView(d, a.asOf, a),
+  },
+  tickets: {
+    description: "Requests between the festival's own teams (publicity, sponsorship, events): who asked whom for what, status, needed-by date, history and linked tasks. Pass ticketId, or filter to three tickets or fewer, to read the details. You cannot create or change tickets.",
+    input: z.object({ asOf, team: z.enum(TICKET_TEAMS).optional(), status: z.enum(TICKET_STATUSES).optional(), ticketId: z.string().max(60).optional() }),
+    run: (d: Dataset, a: { asOf: string; team?: TicketTeam; status?: TicketStatus; ticketId?: string }) => ticketsView(d, a.asOf, a),
   },
   query: {
     description:

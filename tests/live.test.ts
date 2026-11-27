@@ -46,6 +46,8 @@ describe.skipIf(!process.env.LIVE)("live Supabase via anon key", () => {
     expect(f.actualAttendees).toBe(2050);
     expect(d.team.length).toBe(6);
     expect(d.settings.length).toBe(9);
+    // after the ticket patch, reset restores exactly the one sample ticket
+    if (d.tickets) expect(d.tickets.some((t) => t.simulation_note)).toBe(true);
 
     // pick a check-in whose denial removes exactly one attendee (decided locally, then written live)
     const target = d.checkins.find((c) => {

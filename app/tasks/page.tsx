@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/store";
@@ -71,6 +72,7 @@ export default function TasksPage() {
               {rows.map((t) => {
                 const ref = t.origin_ref as { reason?: string; asOf?: string } | null;
                 const mine = canEditTask(me, t.owner_id, data.team);
+                const ticket = t.ticket_id ? data.tickets.find((x) => x.id === t.ticket_id) : null;
                 const why = mine || !t.owner_id ? undefined : taskBlockReason(t.owner_id, data.team);
                 return (
                   <tr key={t.id} className={`border-b border-line/60 align-top ${t.status === "done" ? "text-muted" : ""}`}>
@@ -79,6 +81,14 @@ export default function TasksPage() {
                         {t.title}
                       </button>
                       {ref?.reason && <div className="mt-0.5 text-[12px] text-muted">Why: {ref.reason}</div>}
+                      {ticket && (
+                        <div className="mt-0.5 text-[12px]">
+                          <Link className="text-brand underline" href={`/tickets?focus=${ticket.id}`}>
+                            Ticket: {ticket.title}
+                          </Link>
+                          {ticket.simulation_note && <div className="text-[11px] font-semibold text-warn">{ticket.simulation_note}</div>}
+                        </div>
+                      )}
                     </td>
                     <td className="px-2 py-2">
                       {t.owner_name ?? <span className="text-muted">unassigned</span>}

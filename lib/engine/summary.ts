@@ -2,6 +2,7 @@
 // Everything here is computed by the engine from current data; nothing is written by hand.
 import { campaignTable, DEF, flags, funnel, pace, projection, tasksView, targetsVsActuals } from "./metrics";
 import { prepare } from "./prepare";
+import { ticketSummary } from "./tickets";
 import { daysBetween, resolveAsOf } from "./time";
 import { SOURCE_TABLES, type Dataset } from "./types";
 import { viewAsOf } from "./view";
@@ -59,6 +60,8 @@ export function buildSummary(data: Dataset, asOf: string) {
       : null,
     projection: proj ? { countsOnly: "people confirmed by the selected date; not a forecast of the final number", confirmedNow: proj.value.confirmedNow, low: proj.value.low, mid: proj.value.mid, high: proj.value.high, goal: proj.value.goal, assumptions: proj.value.assumptions } : null,
     tasks: { byStatus: tasks.byStatus, overdue: tasks.overdue },
+    // counts only: ticket text is read through the tickets tool, so a simulated one always arrives with its label
+    teamTickets: ticketSummary(view, asOf),
     team: view.team.map((m) => ({ owner_id: m.owner_id, name: m.owner_name, team: m.team })),
     dataAvailable: availability(view),
     definitions: [DEF.attendee, DEF.registered, DEF.attribution, DEF.spend, DEF.showup],

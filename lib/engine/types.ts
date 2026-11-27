@@ -166,8 +166,41 @@ export interface TaskRow {
   priority: "low" | "medium" | "high";
   origin: TaskOrigin;
   origin_ref: Record<string, unknown> | null;
+  /** the ticket this task answers, if any */
+  ticket_id?: string | null;
+  /** date in the story on which the task was made; created_at is the real clock */
+  story_date?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type TicketStatus = "open" | "accepted" | "declined" | "in_progress" | "done";
+
+export interface TicketRow {
+  id: string;
+  title: string;
+  details: string;
+  from_team: string;
+  to_team: string;
+  requester_id: string | null;
+  assignee_id: string | null;
+  priority: "low" | "medium" | "high";
+  status: TicketStatus;
+  raised_on: string;
+  needed_by: string | null;
+  /** set only on made-up scenarios; shown wherever the ticket appears or is quoted */
+  simulation_note: string | null;
+  created_at?: string;
+}
+
+export interface TicketEventRow {
+  id: number | string;
+  ticket_id: string;
+  kind: "raised" | "comment" | "accepted" | "declined" | "in_progress" | "done" | "edited";
+  body: string | null;
+  before: Partial<Pick<TicketRow, "title" | "details" | "priority" | "needed_by">> | null;
+  actor_name: string;
+  story_date: string;
 }
 
 export interface SettingRow {
@@ -201,6 +234,8 @@ export interface Dataset {
   tasks: TaskRow[];
   settings: SettingRow[];
   change_log: ChangeLogRow[];
+  tickets: TicketRow[];
+  ticket_events: TicketEventRow[];
 }
 
 export const SOURCE_TABLES = [

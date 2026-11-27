@@ -2,6 +2,7 @@
 export const APP_TARGETS = {
   campaign: { help: "a campaign: edit status or budget (id = campaign id)", href: (id?: string) => `/campaigns${id ? `?focus=${id}` : ""}` },
   task: { help: "tasks: edit status, owner, due date or delete (id = task id)", href: (id?: string) => `/tasks${id ? `?focus=${id}` : ""}` },
+  ticket: { help: "tickets between teams: raise, comment, accept, decline or edit (id = ticket id)", href: (id?: string) => `/tickets${id ? `?focus=${id}` : ""}` },
   daily_marketing: { help: "daily marketing rows: spend and traffic (id = campaign id)", href: (id?: string) => `/data?tab=daily_marketing${id ? `&focus=${id}` : ""}` },
   targets: { help: "goal versions", href: () => "/data?tab=targets" },
   checkins: { help: "gate scan rows (id = person id)", href: (id?: string) => `/data?tab=checkins${id ? `&focus=${id}` : ""}` },
