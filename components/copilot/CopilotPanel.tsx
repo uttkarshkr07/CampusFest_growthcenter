@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { MessageSquarePlus, X } from "lucide-react";
+import { Maximize2, MessageSquarePlus, X } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
 import { MASCOT } from "@/lib/mascot";
@@ -56,6 +57,9 @@ export default function CopilotPanel() {
         <button onClick={newChat} disabled={busy} className="rounded p-1 text-muted hover:bg-slate-100" title="New chat" aria-label="New chat">
           <MessageSquarePlus className="h-4 w-4" />
         </button>
+        <Link href="/copilot" className="rounded p-1 text-muted hover:bg-slate-100" title="Open full page with all chats" aria-label="Open full page with all chats">
+          <Maximize2 className="h-4 w-4" />
+        </Link>
         <button onClick={() => setOpen(false)} className="rounded p-1 text-muted hover:bg-slate-100" aria-label="Close">
           <X className="h-4 w-4" />
         </button>

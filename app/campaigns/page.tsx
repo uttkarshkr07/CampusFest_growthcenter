@@ -48,7 +48,7 @@ export default function CampaignsPage() {
   });
   const tot = res.t.value.totals;
   const th = (key: SortKey, label: string, help?: string) => (
-    <th className="whitespace-nowrap px-2 py-2 text-right font-medium">
+    <th key={key} className="whitespace-nowrap px-2 py-2 text-right font-medium">
       <button className="inline-flex items-center gap-1 hover:text-ink" onClick={() => setSort({ key, dir: sort.key === key ? (-sort.dir as 1 | -1) : 1 })}>
         {label}
         {sort.key === key && <ArrowDownUp className="h-3 w-3" />}

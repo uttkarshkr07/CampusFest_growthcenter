@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BarChart3, Calculator, Database, LayoutDashboard, ListChecks, RotateCcw, Settings, Target, Users } from "lucide-react";
+import { BarChart3, Calculator, Database, LayoutDashboard, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
 import Login from "./Login";
 import { AUTH_ON } from "@/lib/auth/config";
@@ -15,6 +15,7 @@ import { fmtDate } from "@/lib/format";
 
 const NAV = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/copilot", label: "Copilot", icon: MessageSquare },
   { href: "/campaigns", label: "Campaigns", icon: BarChart3 },
   { href: "/actions", label: "Actions", icon: Target },
   { href: "/whatif", label: "What-if", icon: Calculator },
@@ -138,7 +139,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset demo data?">
         <p className="text-[13px] text-slate-700">
-          This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. It cannot be undone.
+          This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. Copilot chats are kept. It cannot be undone.
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button onClick={() => setConfirmReset(false)}>Cancel</Button>

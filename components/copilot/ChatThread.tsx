@@ -21,7 +21,7 @@ const STARTERS = [
 ];
 
 export default function ChatThread() {
-  const { messages, busy, status, send, model } = useChat();
+  const { messages, busy, loading, notice, status, send, model } = useChat();
   const asOf = useStore((s) => s.asOf);
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
@@ -31,7 +31,7 @@ export default function ChatThread() {
   }, [messages.length, busy, status]);
 
   const submit = (q: string) => {
-    if (!q.trim() || busy) return;
+    if (!q.trim() || busy || loading) return;
     setText("");
     void send(q);
   };
@@ -39,7 +39,12 @@ export default function ChatThread() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-        {messages.length === 0 && (
+        {loading && (
+          <div className="flex items-center gap-2 text-[12px] text-muted">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Opening the chat...
+          </div>
+        )}
+        {!loading && messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-[13px] text-slate-700">{MASCOT.greeting}</p>
             <div className="flex flex-col items-start gap-1.5">
@@ -59,7 +64,12 @@ export default function ChatThread() {
             {m.role === "user" ? (
               <div className="ml-8 rounded-lg bg-brand px-3 py-2 text-[13px] text-white">{m.text}</div>
             ) : (
-              <Answer message={m} />
+              <>
+                {m.asOf > asOf && (
+                  <p className="mb-1 text-[11px] text-warn">Answered with a later date selected ({fmtDate(m.asOf)}). The copilot cannot see this answer at the date selected now.</p>
+                )}
+                <Answer message={m} />
+              </>
             )}
           </div>
         ))}
@@ -72,6 +82,7 @@ export default function ChatThread() {
       </div>
 
       <div className="border-t border-line p-3">
+        {notice && <p role="status" className="mb-2 text-[12px] text-warn">{notice}</p>}
         {model && !model.configured && <p className="mb-2 text-[12px] text-warn">The AI model is not set up on this deployment yet. The Actions and What-if screens work without it.</p>}
         <form
           className="flex items-end gap-2"
@@ -94,7 +105,7 @@ export default function ChatThread() {
               }
             }}
           />
-          <Button type="submit" variant="primary" disabled={busy || !text.trim()} title="Send">
+          <Button type="submit" variant="primary" disabled={busy || loading || !text.trim()} title="Send">
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -173,6 +184,8 @@ function ActionCard({ message, action }: { message: ChatMessage; action: ChatAct
           <Button variant="primary" onClick={review}>Review and create</Button>
           <Button onClick={() => setActionStatus(message.id, action.id, "dismissed")}>Dismiss</Button>
         </div>
+      ) : action.status === "created" && action.taskId && !data?.tasks.some((t) => t.id === action.taskId) ? (
+        <div className="mt-2 text-[12px] text-muted">Created earlier. It is no longer in Tasks (deleted, or cleared by a reset).</div>
       ) : action.status === "created" ? (
         <div className="mt-2 text-[12px] font-medium text-good">
           Created. <Link className="underline" href={action.taskId ? `/tasks?focus=${action.taskId}` : "/tasks"}>See it in Tasks</Link>
