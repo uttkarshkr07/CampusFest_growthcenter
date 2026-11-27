@@ -13,7 +13,7 @@ import type { TicketRow, TicketStatus } from "@/lib/engine/types";
 import { fmtDate } from "@/lib/format";
 import { useStore, type TicketInput } from "@/lib/store";
 
-const FILTERS = ["All", "Waiting for my team", "Raised by my team", "Finished"] as const;
+const FILTERS = ["All", "Waiting for my team", "Raised by my team", "In progress", "Finished"] as const;
 type Filter = (typeof FILTERS)[number];
 const PAGE_SIZE = 20;
 
@@ -62,7 +62,7 @@ export default function TicketsPage() {
   const myTeams: readonly string[] = everyTeam ? TICKET_TEAMS : me.teams;
   const waiting = awaiting(tickets, myTeams);
   const shown = tickets.filter((t) =>
-    filter === "Waiting for my team" ? waiting.includes(t) : filter === "Raised by my team" ? myTeams.includes(t.from_team) : filter === "Finished" ? t.finished : true,
+    filter === "Waiting for my team" ? waiting.includes(t) : filter === "Raised by my team" ? myTeams.includes(t.from_team) : filter === "In progress" ? t.status === "in_progress" : filter === "Finished" ? t.finished : true,
   );
   const names = new Map(data.team.map((m) => [m.owner_id, m.owner_name]));
   const open = tickets.find((t) => t.id === openId) ?? null;
@@ -96,7 +96,7 @@ export default function TicketsPage() {
             {FILTERS.map((f) => (
               <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-2.5 py-1 ${filter === f ? "bg-ink text-white" : "border border-line bg-white"}`}>
                 {f}
-                {f === "Waiting for my team" ? ` (${waiting.length})` : f === "All" ? ` (${tickets.length})` : ""}
+                {f === "Waiting for my team" ? ` (${waiting.length})` : f === "All" ? ` (${tickets.length})` : f === "In progress" ? ` (${tickets.filter((t) => t.status === "in_progress").length})` : ""}
               </button>
             ))}
           </div>
