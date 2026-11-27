@@ -6,10 +6,14 @@ import { useAuth } from "@/lib/auth/store";
 import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { Badge, Button, Card, Empty, Field, PageHeader, inputCls } from "@/components/ui";
 import EditableTable, { type ColSpec } from "@/components/EditableTable";
+import DataQuality from "@/components/DataQuality";
+import { QueryParams } from "@/components/deeplink";
 import { fmtDate, fmtDateTime, inr, num } from "@/lib/format";
 
-const TABS = ["Targets", "Campaigns", "Daily marketing", "Check-ins", "Registration history", "Recent changes"] as const;
+const TABS = ["Targets", "Campaigns", "Daily marketing", "Check-ins", "Registration history", "Data quality", "Recent changes"] as const;
 type Tab = (typeof TABS)[number];
+// names used in direct links
+const LINKED_TABS: Record<string, Tab> = { targets: "Targets", campaigns: "Campaigns", daily_marketing: "Daily marketing", checkins: "Check-ins", registration_history: "Registration history", quality: "Data quality" };
 
 const CAMPAIGN_COLS: ColSpec[] = [
   { key: "campaign_id", label: "campaign_id", editable: false, required: true },
@@ -66,14 +70,29 @@ function nextId(rows: Record<string, unknown>[], key: string, prefix: string, wi
 
 export default function DataPage() {
   const [tab, setTab] = useState<Tab>("Targets");
+  const [focus, setFocus] = useState("");
   const { asOf } = useStore();
   const at = `${asOf}T12:00:00+05:30`;
   return (
     <div className="space-y-4">
+      <QueryParams
+        onParams={(p) => {
+          const linked = LINKED_TABS[p.get("tab") ?? ""];
+          if (linked) setTab(linked);
+          setFocus(p.get("focus") ?? "");
+        }}
+      />
+      {focus && <p className="rounded-md bg-brand-soft px-3 py-2 text-[12px]">Showing the rows that match {focus}. Clear the search box to see all rows.</p>}
       <PageHeader title="Data" subtitle="Edit the working copy of the source data. Every change is saved, logged, and recalculates every number in the app. Reset demo data restores the original." />
       <div className="flex flex-wrap gap-1 border-b border-line">
         {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`-mb-px border-b-2 px-3 py-1.5 text-[13px] ${tab === t ? "border-brand font-semibold text-brand" : "border-transparent text-muted hover:text-ink"}`}>
+          <button
+            key={t}
+            onClick={() => {
+              setTab(t);
+              setFocus("");
+            }}
+            className={`-mb-px border-b-2 px-3 py-1.5 text-[13px] ${tab === t ? "border-brand font-semibold text-brand" : "border-transparent text-muted hover:text-ink"}`}>
             {t}
           </button>
         ))}
@@ -83,6 +102,8 @@ export default function DataPage() {
         {tab === "Campaigns" && <EditableTable table="campaigns" idField="campaign_id" cols={CAMPAIGN_COLS} searchKeys={["campaign_id", "campaign_name"]} defaults={(rows) => ({ campaign_id: nextId(rows, "campaign_id", "C", 2), created_at: at })} note="To add a campaign with a budget and status, use Campaigns > Add campaign." />}
         {tab === "Daily marketing" && (
           <EditableTable
+            key={`daily-${focus}`}
+            initialQuery={focus}
             table="daily_marketing"
             idField="activity_id"
             cols={DAILY_COLS}
@@ -93,6 +114,8 @@ export default function DataPage() {
         )}
         {tab === "Check-ins" && (
           <EditableTable
+            key={`checkins-${focus}`}
+            initialQuery={focus}
             table="checkins"
             idField="event_id"
             cols={CHECKIN_COLS}
@@ -111,6 +134,7 @@ export default function DataPage() {
             note="Histories are full-state: to change a registration's status, ADD a new version with a later effective time (that is how the source records it)."
           />
         )}
+        {tab === "Data quality" && <DataQuality />}
         {tab === "Recent changes" && <RecentChanges />}
       </Card>
     </div>

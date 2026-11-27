@@ -3,6 +3,7 @@
 import { baseCaveats, DEF, externalStatusCounts, snapshot, type Snapshot } from "./metrics";
 import type { Dataset, Result } from "./types";
 import { addDays, DAY_MS, istDay } from "./time";
+import { countsAsAdmission } from "./prepare";
 
 export const QUERY_DATASETS = ["people", "scans", "daily_marketing"] as const;
 export type QueryDataset = (typeof QUERY_DATASETS)[number];
@@ -51,7 +52,7 @@ function buildPeople(s: Snapshot): Row[] {
   const { confirmed } = externalStatusCounts(s);
   const attendedDays = new Map<string, Set<string>>();
   for (const c of p.checkins) {
-    if (c.ms > s.asOfMs || c.result !== "admitted" || c.verification !== "verified") continue;
+    if (c.ms > s.asOfMs || !countsAsAdmission(c)) continue;
     let set = attendedDays.get(c.person_id);
     if (!set) attendedDays.set(c.person_id, (set = new Set()));
     set.add(istDay(c.ms));
@@ -101,7 +102,7 @@ function buildScans(s: Snapshot): Row[] {
         verification: c.verification,
         source: c.source,
         campaign_id: s.campaignOfPerson(c.person_id),
-        counts_as_attendance: c.result === "admitted" && c.verification === "verified" && type === "external",
+        counts_as_attendance: countsAsAdmission(c) && type === "external",
       };
     });
 }
@@ -165,7 +166,7 @@ export const QUERY_DEFS: Record<QueryDataset, DatasetDef> = {
       verification: "verified | unverified",
       source: "scanner | manual",
       campaign_id: "acquisition campaign of the person",
-      counts_as_attendance: "admitted AND verified AND external",
+      counts_as_attendance: "admitted AND verified AND external AND scanned while the event was on",
     },
     outcome: [],
     measures: {

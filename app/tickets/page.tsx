@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { QueryParams } from "@/components/deeplink";
 import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
 import { Badge, Button, Card, Empty, Field, Modal, PageHeader, inputCls } from "@/components/ui";
 import { canActFor, canEditTask, whoCanActFor } from "@/lib/auth/permissions";
@@ -14,6 +15,7 @@ import { useStore, type TicketInput } from "@/lib/store";
 
 const FILTERS = ["All", "Waiting for my team", "Raised by my team", "Finished"] as const;
 type Filter = (typeof FILTERS)[number];
+const PAGE_SIZE = 20;
 
 const teamName = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const ACTION_LABEL: Partial<Record<TicketStatus, string>> = { accepted: "Accept", declined: "Decline", in_progress: "Start work", done: "Mark done" };
@@ -52,11 +54,8 @@ export default function TicketsPage() {
   const [raising, setRaising] = useState(false);
   const tickets = useMemo(() => (data ? ticketsAt(data, asOf) : []), [data, asOf]);
 
-  // links from tasks and the copilot arrive as /tickets?focus=<id>
-  useEffect(() => {
-    const focus = new URLSearchParams(window.location.search).get("focus");
-    if (focus) setOpenId(focus);
-  }, []);
+  const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [filter, asOf]);
 
   if (!data) return null;
   const everyTeam = !me || me.isReviewer;
@@ -67,9 +66,19 @@ export default function TicketsPage() {
   );
   const names = new Map(data.team.map((m) => [m.owner_id, m.owner_name]));
   const open = tickets.find((t) => t.id === openId) ?? null;
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
+  const at = Math.min(page, pages);
 
   return (
     <div className="space-y-4">
+      {/* links from tasks and the copilot arrive as /tickets?focus=<id> */}
+      <QueryParams
+        onParams={(p) => {
+          const id = p.get("focus");
+          if (id) setOpenId(id);
+        }}
+      />
+      {openId && !open && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">That ticket does not exist at the selected date.</p>}
       <PageHeader
         title="Tickets between teams"
         subtitle={`Requests one team raises with another, shown as they stood at the end of ${fmtDate(asOf)}. Everyone can read and comment.`}
@@ -95,7 +104,7 @@ export default function TicketsPage() {
             <Empty>{tickets.length === 0 ? "No tickets had been raised by this date." : "No tickets match this filter."}</Empty>
           ) : (
             <div className="space-y-2">
-              {shown.map((t) => (
+              {shown.slice((at - 1) * PAGE_SIZE, at * PAGE_SIZE).map((t) => (
                 <Card key={t.id}>
                   <button className="w-full text-left" onClick={() => setOpenId(t.id)}>
                     <div className="flex flex-wrap items-center gap-2">
@@ -118,6 +127,19 @@ export default function TicketsPage() {
             </div>
           )}
         </>
+      )}
+      {pages > 1 && (
+        <div className="flex items-center justify-end gap-2 text-[12px]">
+          <Button disabled={at <= 1} onClick={() => setPage(at - 1)}>
+            Previous
+          </Button>
+          <span className="text-muted">
+            Page {at} of {pages}
+          </span>
+          <Button disabled={at >= pages} onClick={() => setPage(at + 1)}>
+            Next
+          </Button>
+        </div>
       )}
       {open && <TicketDialog key={`${open.id}-${asOf}`} ticket={open} onClose={() => setOpenId(null)} />}
       {raising && <TicketForm onClose={() => setRaising(false)} />}
@@ -227,7 +249,7 @@ function TicketDialog({ ticket: t, onClose }: { ticket: TicketAtDate; onClose: (
               <ul className="list-disc pl-5">
                 {tasks.map((x) => (
                   <li key={x.id}>
-                    <Link className="text-brand underline" href="/tasks">
+                    <Link className="text-brand underline" href={`/tasks?focus=${x.id}`}>
                       {x.title}
                     </Link>{" "}
                     <span className="text-muted">

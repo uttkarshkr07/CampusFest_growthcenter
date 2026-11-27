@@ -49,6 +49,7 @@ export default function EditableTable({
   filter,
   defaults,
   note,
+  initialQuery = "",
 }: {
   table: SourceTable;
   idField: string;
@@ -57,10 +58,12 @@ export default function EditableTable({
   filter?: (r: Row) => boolean;
   defaults?: (rows: Row[]) => Record<string, unknown>;
   note?: string;
+  /** a direct link starts the search on one item */
+  initialQuery?: string;
 }) {
   const { data, updateSourceRow, insertSourceRow } = useStore();
   const mayEdit = canEdit(useAuth((s) => s.me), table);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<{ row: number; key: string; value: string } | null>(null);
   const [adding, setAdding] = useState<Record<string, string> | null>(null);

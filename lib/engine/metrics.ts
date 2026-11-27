@@ -1,6 +1,8 @@
 import { prepare, type Prepared, type WithMs } from "./prepare";
 import type { Dataset, HistoryRow, RegistrationRow, Result, TaskRow } from "./types";
 import { addDays, daysBetween, endOfIstDay, istDay, resolveAsOf, toMs } from "./time";
+import { countsAsAdmission } from "./prepare";
+import { dataQuality, qualitySummary } from "./quality";
 
 // ---------------------------------------------------------------------------
 // Shared vocabulary (used in basis strings so every answer cites its rules)
@@ -81,7 +83,7 @@ export function snapshot(data: Dataset, asOf: string): Snapshot {
   const attendees = new Set<string>();
   for (const c of p.checkins) {
     if (c.ms > asOfMs) continue;
-    if (c.result !== "admitted" || c.verification !== "verified") continue;
+    if (!countsAsAdmission(c)) continue;
     if (!isExternal(c.person_id)) continue;
     attendees.add(c.person_id);
   }
@@ -564,11 +566,11 @@ export function dataHealth(data: Dataset, asOf: string) {
   const s = snapshot(data, asOf);
   const p = s.p;
   const cks = p.checkins.filter((c) => c.ms <= s.asOfMs);
-  const nonExternalAdmits = cks.filter((c) => c.result === "admitted" && c.verification === "verified" && !s.isExternal(c.person_id));
+  const nonExternalAdmits = cks.filter((c) => countsAsAdmission(c) && !s.isExternal(c.person_id));
   const negative = p.daily.filter((d) => d.ms <= s.asOfMs && Number(d.marketing_spend_inr ?? 0) < 0);
   const orphanCheckins = cks.filter((c) => !p.personById.has(c.person_id)).length;
   const regsWithoutHistory = s.regsAsOf.filter((r) => !p.historyByReg.has(r.registration_id)).length;
-  const admittedExternal = cks.filter((c) => c.result === "admitted" && c.verification === "verified" && s.isExternal(c.person_id)).length;
+  const admittedExternal = cks.filter((c) => countsAsAdmission(c) && s.isExternal(c.person_id)).length;
   return {
     value: {
       asOf: s.label,
@@ -589,6 +591,8 @@ export function dataHealth(data: Dataset, asOf: string) {
       unattributedVisitors: s.walkIns.size,
       registrationsWithoutHistory: regsWithoutHistory,
       warnings: p.warnings,
+      // problem records by kind; the Data quality screen lists every one
+      problems: qualitySummary(dataQuality(data)),
     },
     basis: [DEF.asOf, DEF.dedup, DEF.attendee, "Duplicate counts cover the whole loaded dataset, not just rows up to as-of."],
     caveats: [] as string[],
@@ -628,7 +632,7 @@ export function person(data: Dataset, personId: string, asOf: string) {
   }
   for (const c of p.checkins)
     if (c.person_id === personId && c.ms <= s.asOfMs) {
-      const ok = c.result === "admitted" && c.verification === "verified" && x.person_type === "external";
+      const ok = countsAsAdmission(c) && x.person_type === "external";
       items.push({ at: c.occurred_at, ms: c.ms, kind: "checkin", title: `Check-in: ${c.result}, ${c.verification} (${c.source})`, detail: c.event_id, campaign_id: c.campaign_id, counts: ok });
     }
   items.sort((a, b) => a.ms - b.ms);

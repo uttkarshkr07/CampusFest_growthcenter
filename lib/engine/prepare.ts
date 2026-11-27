@@ -11,8 +11,15 @@ import type {
 } from "./types";
 import { resolveSettings, type EngineSettings } from "./settings";
 import { endOfIstDay, istDay, toMs } from "./time";
+import { tidyRows } from "./vocab";
 
 export type WithMs<T> = T & { ms: number };
+
+/** inEvent: the scan falls between the event's start and end */
+export type PreparedScan = WithMs<CheckinRow> & { inEvent: boolean };
+
+/** An admission that counts: admitted and verified, scanned while the event was on. */
+export const countsAsAdmission = (c: PreparedScan) => c.result === "admitted" && c.verification === "verified" && c.inEvent;
 
 export interface DedupStat {
   table: string;
@@ -48,7 +55,7 @@ export interface Prepared {
   regById: Map<string, WithMs<RegistrationRow>>;
   history: WithMs<HistoryRow>[];
   historyByReg: Map<string, WithMs<HistoryRow>[]>;
-  checkins: WithMs<CheckinRow>[];
+  checkins: PreparedScan[];
   dedup: DedupStat[];
   warnings: string[];
 }
@@ -153,13 +160,16 @@ export function prepare(data: Dataset): Prepared {
     const day = String(r.activity_date).slice(0, 10);
     return { ...r, activity_date: day, ms: endOfIstDay(day) };
   });
-  const people = withMs(run(data.people, "person_id", "people"), "first_seen_at");
-  const interactions = withMs(run(data.interactions, "interaction_id", "interactions"), "occurred_at");
-  const registrations = withMs(run(data.registrations, "registration_id", "registrations"), "registered_at");
-  const history = withMs(run(data.registration_history, "history_id", "registration_history"), "effective_at").sort(
-    (a, b) => a.ms - b.ms || a.history_id.localeCompare(b.history_id),
+  // fixed words are read tidied, and a row without a readable time is left out of dated figures
+  // (both are listed on the Data quality screen)
+  const dated = <T extends { ms: number }>(rows: T[]) => rows.filter((r) => Number.isFinite(r.ms));
+  const people = withMs(tidyRows(run(data.people, "person_id", "people"), ["person_type"]), "first_seen_at");
+  const interactions = dated(withMs(tidyRows(run(data.interactions, "interaction_id", "interactions"), ["event_type"]), "occurred_at"));
+  const registrations = dated(withMs(run(data.registrations, "registration_id", "registrations"), "registered_at"));
+  const history = dated(withMs(tidyRows(run(data.registration_history, "history_id", "registration_history"), ["status"]), "effective_at")).sort(
+    (a, b) => a.ms - b.ms || String(a.history_id).localeCompare(String(b.history_id)),
   );
-  const checkins = withMs(run(data.checkins, "event_id", "checkins"), "occurred_at");
+  const checkins = dated(withMs(tidyRows(run(data.checkins, "event_id", "checkins"), ["result", "verification", "source"]), "occurred_at")).map((c) => ({ ...c, inEvent: c.ms >= startMs && c.ms <= endMs }));
 
   const p: Prepared = {
     data,

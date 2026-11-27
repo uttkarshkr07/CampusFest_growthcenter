@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { QueryParams, useSpotlight } from "@/components/deeplink";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/store";
 import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
@@ -10,11 +11,14 @@ import { Badge, Button, Card, PageHeader } from "@/components/ui";
 export default function SettingsPage() {
   const { data, setSetting } = useStore();
   const mayEdit = canEdit(useAuth((s) => s.me), "settings");
+  const [focus, setFocus] = useState<string | null>(null);
+  useSpotlight(focus && `setting-${focus}`);
   if (!data) return null;
   const s = resolveSettings(data.settings);
   const keys = Object.keys(SETTING_HELP) as (keyof EngineSettings)[];
   return (
     <div className="space-y-4">
+      <QueryParams onParams={(p) => setFocus(p.get("focus"))} />
       <PageHeader title="Settings" subtitle="Assumptions and decision thresholds. Every value here is an ASSUMPTION, not sourced data. Changing one instantly recalculates projections and flags." />
       {!mayEdit && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">View only for you. {whoCanEdit("settings")}</p>}
       <Card title="Assumptions and thresholds" right={<Badge kind="assumption" />}>
@@ -46,7 +50,7 @@ function SettingRow({ k, value, locked, onSave }: { k: keyof EngineSettings; val
   const valid = v !== "" && Number.isFinite(parsed) && parsed >= 0 && (meta.kind !== "pct" || parsed <= 1);
   const changed = valid && parsed !== value;
   return (
-    <div className="grid grid-cols-1 items-center gap-2 py-3 md:grid-cols-[260px_1fr_220px]">
+    <div id={`setting-${k}`} className="grid grid-cols-1 items-center gap-2 py-3 md:grid-cols-[260px_1fr_220px]">
       <div className="text-[13px] font-medium">{meta.label}</div>
       <div className="text-[12px] text-muted">{meta.help}</div>
       <div className="flex items-center justify-end gap-2">

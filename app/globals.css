@@ -32,6 +32,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* the item a direct link points to */
+.spotlight {
+  outline: 3px solid var(--color-brand);
+  outline-offset: -3px;
+}
+.spotlight,
+.spotlight > td {
+  background: var(--color-brand-soft) !important;
+}
+
 input,
 select,
 textarea {

@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { actionList, actionMembers, COHORT_KEYS, COHORTS, viewAsOf, type Cohort } from "@/lib/engine";
 import { Badge, Button, Card, Caveats, Empty, PageHeader } from "@/components/ui";
 import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
+import { QueryParams } from "@/components/deeplink";
 import { num, pct } from "@/lib/format";
 
 const PAGE = 50;
@@ -16,10 +17,6 @@ export default function ActionsPage() {
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState<TaskDraft | null>(null);
 
-  useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get("cohort") as Cohort | null;
-    if (wanted && COHORT_KEYS.includes(wanted)) setCohort(wanted);
-  }, []);
   useEffect(() => setPage(1), [cohort, asOf]);
 
   const res = useMemo(() => {
@@ -44,6 +41,12 @@ export default function ActionsPage() {
 
   return (
     <div className="space-y-4">
+      <QueryParams
+        onParams={(p) => {
+          const wanted = p.get("cohort") as Cohort | null;
+          if (wanted && COHORT_KEYS.includes(wanted)) setCohort(wanted);
+        }}
+      />
       <PageHeader title="Actions" subtitle="The people behind each funnel leak. Group sizes are not recoverable attendees." />
       <div className="grid gap-3 md:grid-cols-4">
         {res.summary.value.groups.map((g) => (

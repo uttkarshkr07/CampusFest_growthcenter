@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { dedupe, type DedupStat } from "./prepare";
 import { daysBetween, istDay, resolveAsOf, toMs } from "./time";
+import { tidyRows } from "./vocab";
 import type { Result, SponsorActivationRow } from "./types";
 
 export interface SponsorTarget {
@@ -152,9 +153,14 @@ function snapshot(data: SponsorData, asOf: string): Snap {
   if (hit) return hit;
 
   const upTo = <T>(rows: T[], when: (r: T) => string | null) => rows.filter((r) => toMs(when(r)) <= ms);
-  const i = dedupe(upTo(data.interactions, (r) => r.occurred_at), "interaction_id", "sponsor_interactions");
-  const q = dedupe(upTo(data.qualification, (r) => r.effective_at), "history_id", "brand_qualification");
-  const h = dedupe(upTo(data.opportunity_history, (r) => r.effective_at), "history_id", "opportunity_history");
+  // repeated IDs are found on the rows as written; the fixed words are then read tidied
+  const read = <T extends object>(rows: T[], id: keyof T & string, table: string, words: (keyof T)[]) => {
+    const out = dedupe(rows, id, table);
+    return { rows: tidyRows(out.rows, words), stat: out.stat };
+  };
+  const i = read(upTo(data.interactions, (r) => r.occurred_at), "interaction_id", "sponsor_interactions", ["event_type", "outcome"]);
+  const q = read(upTo(data.qualification, (r) => r.effective_at), "history_id", "brand_qualification", ["qualification_status"]);
+  const h = read(upTo(data.opportunity_history, (r) => r.effective_at), "history_id", "opportunity_history", ["stage"]);
   const brands = upTo(data.brands, (r) => r.created_at);
   const targets = upTo(data.targets, (r) => r.effective_at).sort((a, b) => toMs(a.effective_at) - toMs(b.effective_at));
   const dedup = [i.stat, q.stat, h.stat];
@@ -170,7 +176,7 @@ function snapshot(data: SponsorData, asOf: string): Snap {
     interactions: i.rows,
     qualification: q.rows,
     qualNow: latestBy(q.rows, (r) => r.brand_id),
-    opportunities: upTo(data.opportunities, (r) => r.created_at),
+    opportunities: tidyRows(upTo(data.opportunities, (r) => r.created_at), ["support_type"]),
     history: h.rows,
     oppNow: latestBy(h.rows, (r) => r.opportunity_id),
     activations: upTo(data.activations, (r) => r.linked_at),

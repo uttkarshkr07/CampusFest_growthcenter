@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
 import { useSponsor } from "@/lib/sponsor/store";
 import { awaiting, TICKET_TEAMS, ticketsAt } from "@/lib/engine/tickets";
-import { STORY, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import { Button, Modal, Spinner } from "./ui";
 import { fmtDate } from "@/lib/format";
 
@@ -31,7 +31,7 @@ const NAV = [
 
 export default function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving } = useStore();
+  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving, story } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
   const { status: authStatus, me, init: initAuth, signOut } = useAuth();
@@ -58,11 +58,13 @@ export default function Shell({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [toast, notify]);
 
-  const quick = [
-    { label: "Today in story", day: STORY.today, hint: "15 Mar 2025: revised targets take effect" },
-    { label: "Event day 1", day: STORY.day1, hint: "12 Apr 2025" },
-    { label: "Post-event", day: STORY.post, hint: "20 Apr 2025: final data" },
-  ];
+  const quick = story
+    ? [
+        { label: "Today in story", day: story.today, hint: `${fmtDate(story.today)}: the day the story treats as today` },
+        { label: "Event day 1", day: story.day1, hint: fmtDate(story.day1) },
+        { label: "Post-event", day: story.post, hint: `${fmtDate(story.post)}: final data` },
+      ]
+    : [];
 
   if (AUTH_ON && authStatus !== "ready") return authStatus === "checking" ? <div className="p-6"><Spinner label="Checking your sign-in..." /></div> : <Login />;
 
@@ -108,8 +110,8 @@ export default function Shell({ children }: { children: ReactNode }) {
             <span className="text-[12px] font-medium text-muted">As of</span>
             <input
               type="date"
-              min={STORY.min}
-              max={STORY.max}
+              min={story?.min}
+              max={story?.max}
               value={asOf}
               onChange={(e) => e.target.value && setAsOf(e.target.value)}
               className="rounded-md border border-line px-2 py-1 text-[13px]"

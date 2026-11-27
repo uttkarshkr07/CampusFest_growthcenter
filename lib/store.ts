@@ -3,9 +3,8 @@
 import { create } from "zustand";
 import type { ChangeLogRow, Dataset, SourceTable, TaskRow, CampaignPlanRow, TargetRow, CampaignRow, TicketStatus } from "@/lib/engine/types";
 import { getSupabase } from "@/lib/supabase";
+import { storyDates, type Story } from "@/lib/story";
 
-export const DEFAULT_AS_OF = "2025-04-20";
-export const STORY = { min: "2025-01-15", max: "2025-04-20", today: "2025-03-15", day1: "2025-04-12", post: "2025-04-20" };
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -20,7 +19,10 @@ interface State {
   data: Dataset | null;
   status: Status;
   error: string | null;
+  /** empty until the data is loaded */
   asOf: string;
+  /** the date range and named dates, read from the data */
+  story: Story | null;
   saving: boolean;
   toast: string | null;
   setAsOf: (d: string) => void;
@@ -105,7 +107,8 @@ export const useStore = create<State>((set, get) => {
     data: null,
     status: "idle",
     error: null,
-    asOf: DEFAULT_AS_OF,
+    asOf: "",
+    story: null,
     saving: false,
     toast: null,
     ticketsReady: false,
@@ -125,7 +128,11 @@ export const useStore = create<State>((set, get) => {
         set({ status: "error", error: error?.message ?? "Empty response from get_dataset()" });
         return;
       }
-      set({ data: { ...EMPTY_APP, ...(data as Dataset) }, status: "ready", ticketsReady: "tickets" in (data as object) });
+      const loaded = { ...EMPTY_APP, ...(data as Dataset) };
+      const story = storyDates(loaded);
+      const picked = get().asOf;
+      // keep the date already chosen if the data still covers it; otherwise show the end of the story
+      set({ data: loaded, status: "ready", ticketsReady: "tickets" in (data as object), story, asOf: picked >= story.min && picked <= story.max ? picked : story.post });
     },
 
     updateSourceRow: async (table, rowId, patch, rowRef) => {

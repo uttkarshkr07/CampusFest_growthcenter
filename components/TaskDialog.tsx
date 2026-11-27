@@ -107,7 +107,7 @@ export default function TaskDialog({ open, onClose, initial, onSaved }: { open: 
           <Field label="Status">
             <select className={inputCls} value={t.status} onChange={(e) => set({ status: e.target.value as TaskDraft["status"] })}>
               <option value="todo">To do</option>
-              <option value="doing">Doing</option>
+              <option value="doing">In progress</option>
               <option value="blocked">Blocked</option>
               <option value="done">Done</option>
             </select>

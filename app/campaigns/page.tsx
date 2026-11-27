@@ -8,6 +8,7 @@ import { canEdit, whoCanEdit } from "@/lib/auth/permissions";
 import { campaignTable, flags, toIstIso, type CampaignMetrics } from "@/lib/engine";
 import { Badge, Button, Card, Caveats, Field, FlagChip, Modal, PageHeader, Tip, inputCls } from "@/components/ui";
 import TaskDialog, { type TaskDraft } from "@/components/TaskDialog";
+import { QueryParams, useSpotlight } from "@/components/deeplink";
 import { taskFromFlag } from "@/components/flagTask";
 import { inr, num, pct } from "@/lib/format";
 
@@ -33,6 +34,8 @@ export default function CampaignsPage() {
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "inrPerAttendee", dir: 1 });
   const [draft, setDraft] = useState<TaskDraft | null>(null);
   const [adding, setAdding] = useState(false);
+  const [focus, setFocus] = useState<string | null>(null);
+  useSpotlight(focus && `campaign-${focus}`);
   const res = useMemo(() => (data ? { t: campaignTable(data, asOf), f: flags(data, asOf) } : null), [data, asOf]);
   if (!data || !res) return null;
   const flagBy = new Map(res.f.value.flags.map((f) => [f.campaign_id, f]));
@@ -59,6 +62,8 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-4">
+      <QueryParams onParams={(p) => setFocus(p.get("focus"))} />
+      {focus && !rows.some((r) => r.campaign_id === focus) && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">Campaign {focus} does not exist at the selected date.</p>}
       <PageHeader
         title="Campaigns"
         subtitle={`Ranked by cost per ${res.f.value.phase === "post-event" ? "actual attendee" : "confirmed registrant (pre-event proxy)"}. Status and budget are app data; everything else is computed from the source records.${mayEdit ? "" : ` View only for you. ${whoCanEdit("campaigns")}`}`}
@@ -94,7 +99,7 @@ export default function CampaignsPage() {
                 const f = flagBy.get(r.campaign_id);
                 const sp = sponsorBy.get(r.campaign_id);
                 return (
-                  <tr key={r.campaign_id} className="border-b border-line/70 hover:bg-slate-50/60">
+                  <tr key={r.campaign_id} id={`campaign-${r.campaign_id}`} className="border-b border-line/70 hover:bg-slate-50/60">
                     <td className="px-2 py-2">{f && <FlagChip level={f.level} title={f.reason} />}</td>
                     <td className="px-2 py-2">
                       <div className="font-medium">
@@ -224,7 +229,7 @@ function AddCampaign({ open, onClose }: { open: boolean; onClose: () => void }) 
         owner_name: owner?.owner_name ?? null,
         created_at: created,
         planned_start_at: created,
-        planned_end_at: "2025-04-13T20:00:00+05:30",
+        planned_end_at: data!.event[0]?.event_ends_at ?? null,
       },
       f.budget ? Number(f.budget) : null,
     );

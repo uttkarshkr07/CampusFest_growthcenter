@@ -9,10 +9,11 @@ import { canEditTask, taskBlockReason } from "@/lib/auth/permissions";
 import { tasksView } from "@/lib/engine";
 import { Badge, Button, Card, Empty, Modal, PageHeader } from "@/components/ui";
 import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
+import { QueryParams, useSpotlight } from "@/components/deeplink";
 import { fmtDate } from "@/lib/format";
 
 const STATUS = ["todo", "doing", "blocked", "done"] as const;
-const LABEL = { todo: "To do", doing: "Doing", blocked: "Blocked", done: "Done" };
+const LABEL = { todo: "To do", doing: "In progress", blocked: "Blocked", done: "Done" };
 
 export default function TasksPage() {
   const { data, asOf, updateTask, deleteTask } = useStore();
@@ -21,6 +22,8 @@ export default function TasksPage() {
   const [status, setStatus] = useState<string>("");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [focus, setFocus] = useState<string | null>(null);
+  useSpotlight(focus && `task-${focus}`);
   const res = useMemo(() => (data ? tasksView(data, asOf, { status: status || undefined, overdueOnly }) : null), [data, asOf, status, overdueOnly]);
   if (!data || !res) return null;
   const v = res.value;
@@ -29,6 +32,18 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-4">
+      <QueryParams
+        onParams={(p) => {
+          const id = p.get("focus");
+          setFocus(id);
+          // a linked task must not be hidden by a filter
+          if (id) {
+            setStatus("");
+            setOverdueOnly(false);
+          }
+        }}
+      />
+      {focus && !data.tasks.some((t) => t.id === focus) && <p className="rounded-md bg-warn-soft px-3 py-2 text-[12px] text-warn">That task is no longer here. It may have been deleted, or cleared by a reset.</p>}
       <PageHeader
         title="Tasks"
         subtitle={`Overdue is judged against the as-of date (${asOf}), which the app treats as "today".`}
@@ -75,7 +90,7 @@ export default function TasksPage() {
                 const ticket = t.ticket_id ? data.tickets.find((x) => x.id === t.ticket_id) : null;
                 const why = mine || !t.owner_id ? undefined : taskBlockReason(t.owner_id, data.team);
                 return (
-                  <tr key={t.id} className={`border-b border-line/60 align-top ${t.status === "done" ? "text-muted" : ""}`}>
+                  <tr key={t.id} id={`task-${t.id}`} className={`border-b border-line/60 align-top ${t.status === "done" ? "text-muted" : ""}`}>
                     <td className="max-w-md px-2 py-2">
                       <button className="text-left font-medium hover:text-brand" onClick={() => setDraft({ ...t })}>
                         {t.title}
