@@ -78,7 +78,7 @@ on conflict (owner_id) do nothing;
 insert into public.original_settings (key, value) values
   ('showup_low', '0.65'), ('showup_mid', '0.75'), ('showup_high', '0.85'), ('walkin_assumption', '100'),
   ('scale_cost_ratio', '0.8'), ('stop_cost_ratio', '1.5'), ('scale_min_showup', '0.75'),
-  ('stop_max_showup', '0.55'), ('min_sample', '30')
+  ('stop_max_showup', '0.55'), ('min_sample', '30'), ('whatif_penalty_base', '2'), ('whatif_penalty_stretch', '1.5')
 on conflict (key) do nothing;
 insert into public.original_tickets (ticket_key, id, title, details, from_team, to_team, requester_id, assignee_id, priority, raised_on, needed_by, simulation_note)
 select 'TK001', '00000000-0000-4000-8000-000000000001', 'RISA Labs on board for an AI x Health Hackathon: publicity needed',

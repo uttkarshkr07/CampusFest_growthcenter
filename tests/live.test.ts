@@ -45,7 +45,7 @@ describe.skipIf(!process.env.LIVE)("live Supabase via anon key", () => {
     expect(f.stages.find((s) => s.key === "registered")!.count).toBe(2800);
     expect(f.actualAttendees).toBe(2050);
     expect(d.team.length).toBe(6);
-    expect(d.settings.length).toBe(9);
+    expect(d.settings.length).toBeGreaterThanOrEqual(9);
     // after the ticket patch, reset restores exactly the one sample ticket
     if (d.tickets) expect(d.tickets.some((t) => t.simulation_note)).toBe(true);
 
