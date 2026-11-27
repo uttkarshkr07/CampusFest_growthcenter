@@ -2,6 +2,8 @@
 // (from the seed: "+05:30"; from Postgres: any offset). `_row_id`, `_source`, `_deleted`
 // exist only on rows loaded from Supabase or created in the app.
 
+import type { BetTableName } from "../data/bet-spec";
+
 export interface RowMeta {
   _row_id?: number;
   _source?: "original" | "app";
@@ -69,6 +71,8 @@ export interface PersonRow extends RowMeta {
   first_campaign_id: string | null;
   owner_name: string | null;
   owner_id: string | null;
+  /** simulated dataset only */
+  college_id?: string | null;
 }
 
 export interface InteractionRow extends RowMeta {
@@ -93,6 +97,12 @@ export interface RegistrationRow extends RowMeta {
   owner_name: string | null;
   owner_id: string | null;
   registered_at: string;
+  /** the next five exist in the simulated dataset only */
+  route?: "individual" | "squad" | "contingent" | string | null;
+  squad_id?: string | null;
+  contingent_id?: string | null;
+  test_name?: string | null;
+  test_arm?: string | null;
 }
 
 export type RegStatus = "interested" | "confirmed" | "cancelled" | "waitlisted";
@@ -218,6 +228,10 @@ export interface ChangeLogRow {
   changed_at: string;
 }
 
+/** A row of a bet or program table. Columns are listed in lib/data/bet-spec.ts. */
+export type BetRow = RowMeta & Record<string, unknown>;
+export type BetData = Record<BetTableName, BetRow[]>;
+
 export interface Dataset {
   event: EventRow[];
   targets: TargetRow[];
@@ -236,6 +250,8 @@ export interface Dataset {
   change_log: ChangeLogRow[];
   tickets: TicketRow[];
   ticket_events: TicketEventRow[];
+  /** bet and program records: the simulated dataset only. Nothing calculates from them yet. */
+  bets?: BetData;
 }
 
 export const SOURCE_TABLES = [

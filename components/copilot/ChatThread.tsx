@@ -12,6 +12,7 @@ import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
 import { Button } from "@/components/ui";
 import { fmtDate } from "@/lib/format";
 import Markdown from "./Markdown";
+import DatasetChooser from "./DatasetChooser";
 
 const STARTERS = [
   "Are we on track for the visitor goal?",
@@ -23,6 +24,10 @@ const STARTERS = [
 export default function ChatThread() {
   const { messages, busy, loading, notice, status, send, model } = useChat();
   const asOf = useStore((s) => s.asOf);
+  const chooser = useStore((s) => s.chooser);
+  const simulated = useStore((s) => s.simulated);
+  // asked once; and once more when the new data first becomes available to someone who could not pick it
+  const askDataset = chooser === null || (chooser === "originalOnly" && simulated === "ready");
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -35,6 +40,8 @@ export default function ChatThread() {
     setText("");
     void send(q);
   };
+
+  if (askDataset) return <DatasetChooser />;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

@@ -63,6 +63,9 @@ export function viewAsOf(data: Dataset, asOf: string): Dataset {
       simulation_note: t.simulation_note,
     })),
     ticket_events: ticketsAt(data, asOf).flatMap((t) => t.events),
+    // left out until each bet table has its own as-of rule (tracking_spec "Global rules"),
+    // so no later booking or payment can reach the copilot
+    bets: undefined,
   };
   byDate.set(ms, view);
   return view;

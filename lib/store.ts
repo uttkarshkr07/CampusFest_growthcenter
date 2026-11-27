@@ -5,9 +5,47 @@ import type { ChangeLogRow, Dataset, SourceTable, TaskRow, CampaignPlanRow, Targ
 import { getSupabase } from "@/lib/supabase";
 import { storyDates, type Story } from "@/lib/story";
 import { loadDataset } from "@/lib/data/load";
+import { DATASET_LABEL, isDatasetId, isMissingInDatabase, rpcName, tableName, type DatasetId } from "@/lib/datasets";
 
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+/**
+ * Whether the simulated dataset can be chosen. unpatched = the database has no tables for it yet;
+ * empty = nothing loaded into it; unchecked = the question could not be answered (network).
+ */
+export type SimulatedStatus = "unknown" | "unpatched" | "empty" | "ready" | "unchecked";
+
+/** "both" = answered while both datasets could be chosen, so it is not asked again */
+export type ChooserAnswer = "both" | "originalOnly" | null;
+
+const DATASET_KEY = "cfgc.dataset";
+const CHOOSER_KEY = "cfgc.dataset.chooser";
+
+const remembered = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const remember = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage blocked: the choice lasts until reload */
+  }
+};
+
+/** only a "no such function" reply means the database has not had the patch */
+async function simulatedStatus(db: NonNullable<ReturnType<typeof getSupabase>>): Promise<SimulatedStatus> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { data, error } = await db.rpc("sim_dataset_status");
+    if (!error) return data === true ? "ready" : "empty";
+    if (isMissingInDatabase(error.message)) return "unpatched";
+  }
+  return "unchecked";
+}
 
 export interface TicketInput {
   title: string;
@@ -17,6 +55,13 @@ export interface TicketInput {
 }
 
 interface State {
+  /** which dataset every screen shows and changes */
+  dataset: DatasetId;
+  simulated: SimulatedStatus;
+  chooser: ChooserAnswer;
+  /** show the other dataset. Refused while a change is being saved. */
+  setDataset: (dataset: DatasetId) => void;
+  answerChooser: () => void;
   data: Dataset | null;
   status: Status;
   error: string | null;
@@ -66,15 +111,25 @@ function taskColumns<T extends object>(row: T, ready: boolean): T {
 const BLOCKED = /row-level security|multiple \(or no\) rows|coerce the result to a single/i;
 
 export const useStore = create<State>((set, get) => {
+  // goes up whenever the data on screen is dropped, so a slow load cannot put it back
+  let generation = 0;
+  let saves = 0;
+  // the saved choice is read once, in the browser
+  let restored = false;
+  /** the database table or function for the dataset on screen */
+  const table = (name: string) => tableName(get().dataset, name);
+  const rpc = (name: string) => rpcName(get().dataset, name);
+
   /** Write to change_log in the DB and locally. Never blocks the main write. */
   async function log(entries: Omit<ChangeLogRow, "id" | "changed_at">[]) {
     const db = getSupabase();
     if (!db || entries.length === 0) return;
-    const { data: rows } = await db.from("change_log").insert(entries).select();
+    const { data: rows } = await db.from(table("change_log")).insert(entries).select();
     if (rows) set((s) => (s.data ? { data: { ...s.data, change_log: [...s.data.change_log, ...(rows as ChangeLogRow[])] } } : {}));
   }
 
   async function guard<T>(fn: () => Promise<T>, okMsg?: string): Promise<T | null> {
+    saves++;
     set({ saving: true });
     try {
       const r = await fn();
@@ -85,7 +140,8 @@ export const useStore = create<State>((set, get) => {
       set({ toast: BLOCKED.test(message) ? "Not saved: your account is not allowed to make this change." : `Save failed: ${message}` });
       return null;
     } finally {
-      set({ saving: false });
+      saves--;
+      set({ saving: saves > 0 });
     }
   }
 
@@ -95,9 +151,9 @@ export const useStore = create<State>((set, get) => {
   async function ticketChange(fn: string, args: Record<string, unknown>, okMsg: string) {
     const done = await guard(async () => {
       const db = getSupabase()!;
-      const { error } = await db.rpc(fn, args);
+      const { error } = await db.rpc(rpc(fn), args);
       if (error) throw new Error(error.message);
-      const [tickets, events] = await Promise.all([db.from("tickets").select("*").order("raised_on").order("created_at"), db.from("ticket_events").select("*").order("id")]);
+      const [tickets, events] = await Promise.all([db.from(table("tickets")).select("*").order("raised_on").order("created_at"), db.from(table("ticket_events")).select("*").order("id")]);
       if (tickets.error || events.error) throw new Error("Saved, but the tickets could not be read back. Reload the page.");
       replaceData({ tickets: tickets.data, ticket_events: events.data } as Partial<Dataset>);
       return true;
@@ -106,6 +162,22 @@ export const useStore = create<State>((set, get) => {
   }
 
   return {
+    dataset: "original",
+    simulated: "unknown",
+    chooser: null,
+    setDataset: (dataset) => {
+      const now = get();
+      if (dataset === now.dataset || now.saving || (dataset === "simulated" && now.simulated !== "ready")) return;
+      generation++;
+      remember(DATASET_KEY, dataset);
+      // the screen loads the chosen dataset when it sees "idle"; the selected date is kept
+      set({ dataset, data: null, status: "idle", error: null, story: null, toast: null });
+    },
+    answerChooser: () => {
+      const chooser = get().simulated === "ready" ? "both" : "originalOnly";
+      remember(CHOOSER_KEY, chooser);
+      set({ chooser });
+    },
     data: null,
     status: "idle",
     error: null,
@@ -117,7 +189,11 @@ export const useStore = create<State>((set, get) => {
     ticketsReady: false,
     setAsOf: (d) => set({ asOf: d }),
     notify: (msg) => set({ toast: msg }),
-    clear: () => set({ data: null, status: "idle", error: null }),
+    clear: () => {
+      generation++;
+      restored = false;
+      set({ data: null, status: "idle", error: null, simulated: "unknown" });
+    },
 
     load: async () => {
       const db = getSupabase();
@@ -125,16 +201,33 @@ export const useStore = create<State>((set, get) => {
         set({ status: "error", error: "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY." });
         return;
       }
+      const mine = ++generation;
       set({ status: "loading", error: null, loadProgress: "Loading the dataset..." });
       try {
-        const result = await loadDataset(db, (loadProgress) => set({ loadProgress }));
+        const simulated = await simulatedStatus(db);
+        if (mine !== generation) return;
+        let dataset = get().dataset;
+        if (!restored) {
+          restored = true;
+          const saved = remembered(DATASET_KEY);
+          if (isDatasetId(saved)) dataset = saved;
+          const chooser = remembered(CHOOSER_KEY);
+          set({ chooser: chooser === "both" || chooser === "originalOnly" ? chooser : null });
+        }
+        // the original is always there; the simulated one only when it can be read
+        if (simulated !== "ready") dataset = "original";
+        set({ simulated, dataset });
+        const result = await loadDataset(db, dataset, (loadProgress) => {
+          if (mine === generation) set({ loadProgress });
+        });
+        if (mine !== generation) return;
         const loaded = { ...EMPTY_APP, ...result.data };
         const story = storyDates(loaded);
         const picked = get().asOf;
         // keep the date already chosen if the data still covers it; otherwise show the end of the story
         set({ data: loaded, status: "ready", ticketsReady: result.hasTickets, story, asOf: picked >= story.min && picked <= story.max ? picked : story.post });
       } catch (e) {
-        set({ status: "error", error: e instanceof Error ? e.message : String(e) });
+        if (mine === generation) set({ status: "error", error: e instanceof Error ? e.message : String(e) });
       }
     },
 
@@ -142,7 +235,7 @@ export const useStore = create<State>((set, get) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
         const before = get().data?.[table].find((x) => x._row_id === rowId) as Record<string, unknown> | undefined;
-        const { data, error } = await db.from(table).update(patch).eq("_row_id", rowId).select().single();
+        const { data, error } = await db.from(tableName(get().dataset, table)).update(patch).eq("_row_id", rowId).select().single();
         if (error) throw new Error(error.message);
         replaceData({ [table]: (get().data![table] as { _row_id?: number }[]).map((x) => (x._row_id === rowId ? data : x)) } as Partial<Dataset>);
         await log(Object.keys(patch).map((field) => ({ table_name: table, row_ref: rowRef, field, old_value: before?.[field] ?? null, new_value: patch[field] ?? null })));
@@ -154,7 +247,7 @@ export const useStore = create<State>((set, get) => {
     insertSourceRow: async (table, row, rowRef) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
-        const { data, error } = await db.from(table).insert({ ...row, _source: "app" }).select().single();
+        const { data, error } = await db.from(tableName(get().dataset, table)).insert({ ...row, _source: "app" }).select().single();
         if (error) throw new Error(error.message);
         replaceData({ [table]: [...(get().data![table] as object[]), data] } as Partial<Dataset>);
         await log([{ table_name: table, row_ref: rowRef, field: "(new row)", old_value: null, new_value: row }]);
@@ -176,7 +269,7 @@ export const useStore = create<State>((set, get) => {
         const db = getSupabase()!;
         const before = get().data!.campaign_plan.find((p) => p.campaign_id === campaignId);
         const next = { campaign_id: campaignId, app_status: before?.app_status ?? "active", budget_inr: before?.budget_inr ?? null, notes: before?.notes ?? null, ...patch, updated_at: new Date().toISOString() };
-        const { data, error } = await db.from("campaign_plan").upsert(next).select().single();
+        const { data, error } = await db.from(table("campaign_plan")).upsert(next).select().single();
         if (error) throw new Error(error.message);
         replaceData({ campaign_plan: [...get().data!.campaign_plan.filter((p) => p.campaign_id !== campaignId), data as CampaignPlanRow] });
         await log(
@@ -196,7 +289,7 @@ export const useStore = create<State>((set, get) => {
     createTask: async (t) =>
       guard(async () => {
         const db = getSupabase()!;
-        const { data, error } = await db.from("tasks").insert(taskColumns(t, get().ticketsReady)).select().single();
+        const { data, error } = await db.from(table("tasks")).insert(taskColumns(t, get().ticketsReady)).select().single();
         if (error) throw new Error(error.message);
         replaceData({ tasks: [...get().data!.tasks, data as TaskRow] });
         await log([{ table_name: "tasks", row_ref: (data as TaskRow).id, field: "(created)", old_value: null, new_value: { title: t.title, origin: t.origin } }]);
@@ -207,7 +300,7 @@ export const useStore = create<State>((set, get) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
         const before = get().data!.tasks.find((x) => x.id === id);
-        const { data, error } = await db.from("tasks").update(taskColumns({ ...patch, updated_at: new Date().toISOString() }, get().ticketsReady)).eq("id", id).select().single();
+        const { data, error } = await db.from(table("tasks")).update(taskColumns({ ...patch, updated_at: new Date().toISOString() }, get().ticketsReady)).eq("id", id).select().single();
         if (error) throw new Error(error.message);
         replaceData({ tasks: get().data!.tasks.map((x) => (x.id === id ? (data as TaskRow) : x)) });
         await log(Object.keys(patch).map((field) => ({ table_name: "tasks", row_ref: id, field, old_value: (before as unknown as Record<string, unknown>)?.[field] ?? null, new_value: (patch as Record<string, unknown>)[field] ?? null })));
@@ -219,7 +312,7 @@ export const useStore = create<State>((set, get) => {
     deleteTask: async (id) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
-        const { data: removed, error } = await db.from("tasks").delete().eq("id", id).select("id");
+        const { data: removed, error } = await db.from(table("tasks")).delete().eq("id", id).select("id");
         if (error) throw new Error(error.message);
         // a delete that is not allowed removes nothing and reports no error
         if (!removed?.length) throw new Error("row-level security");
@@ -235,7 +328,7 @@ export const useStore = create<State>((set, get) => {
       const r = await guard(async () => {
         const db = getSupabase()!;
         const before = get().data!.settings.find((s) => s.key === key);
-        const { error } = await db.from("settings").upsert({ key, value });
+        const { error } = await db.from(table("settings")).upsert({ key, value });
         if (error) throw new Error(error.message);
         replaceData({ settings: [...get().data!.settings.filter((s) => s.key !== key), { key, value }] });
         await log([{ table_name: "settings", row_ref: key, field: "value", old_value: before?.value ?? null, new_value: value }]);
@@ -253,11 +346,11 @@ export const useStore = create<State>((set, get) => {
     resetDemo: async () => {
       const r = await guard(async () => {
         const db = getSupabase()!;
-        const { error } = await db.rpc("reset_demo");
+        const { error } = await db.rpc(rpc("reset_demo"));
         if (error) throw new Error(error.message);
         await get().load();
         return true;
-      }, "Demo data restored to the original dataset.");
+      }, `${DATASET_LABEL[get().dataset]}: restored to the loaded data.`);
       return !!r;
     },
   };

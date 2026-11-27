@@ -1,6 +1,10 @@
-"""Reads the three dataset workbooks and writes one JSON file for the check and load command.
+"""Reads the dataset workbooks and writes one JSON file for the check and load command.
 
-    python -I scripts/dataset_to_json.py <folder with the workbooks> <output .json>
+    python -I scripts/dataset_to_json.py <folder with the workbooks> <output .json> [original|simulated]
+    python -I scripts/dataset_to_json.py --program <program workbook> <output .json>
+
+The simulated dataset has a fourth workbook, Bet Dataset.xlsx. --program reads the Venues and Events
+sheets of the program workbook.
 
 It only reads and converts. Every row keeps its Excel row number (__row) so problems can be found.
 Dates: Excel dates, and text like 2025-04-12 10:00, are taken as India time (+05:30). Text that is
@@ -44,10 +48,38 @@ WORKBOOKS = {
         "tickets": "Tickets",
     }),
 }
+# the simulated dataset only; sheet names and columns match lib/data/bet-spec.ts
+BET_WORKBOOK = ("Bet Dataset.xlsx", {
+    "colleges": "Colleges",
+    "contingents": "Contingents",
+    "contingent_tier_events": "Contingent tiers",
+    "squads": "Squads",
+    "passes": "Passes",
+    "payments": "Payments",
+    "perk_grants": "Perks",
+    "insurance_claims": "Insurance claims",
+    "venues": "Venues",
+    "program_events": "Program events",
+    "seat_booking_history": "Seat bookings",
+    "seat_scans": "Seat scans",
+    "waitlist_entries": "Waitlist",
+    "exchange_offers": "Exchange offers",
+    "competition_results": "Competition results",
+    "hackathon_teams": "Hackathon teams",
+    "hackathon_members": "Hackathon members",
+    "bets": "Bets",
+    "bet_thresholds": "Bet thresholds",
+    "bet_milestones": "Bet milestones",
+    "bet_spend": "Bet spend",
+})
+PROGRAM_SHEETS = {"venues": "Venues", "program_events": "Events"}
 DATETIME = {"effective_at", "created_at", "planned_start_at", "planned_end_at", "first_seen_at", "occurred_at",
-            "registered_at", "linked_at", "event_starts_at", "event_ends_at"}
+            "registered_at", "linked_at", "event_starts_at", "event_ends_at",
+            "reached_at", "booked_at", "locked_in_at", "id_verified_at", "cancelled_at", "qr_voided_at", "paid_at",
+            "granted_at", "collected_at", "filed_at", "decided_at", "starts_at", "ends_at", "joined_at", "left_at",
+            "offered_at", "expires_at", "claimed_at", "expired_at", "recorded_at"}
 DATE = {"activity_date", "history_start", "history_end", "raised_on", "needed_by", "accepted_on", "declined_on",
-        "started_on", "done_on"}
+        "started_on", "done_on", "visited_on", "signed_on", "od_letter_on", "check_on", "due_on", "spent_on"}
 WRITTEN = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?))?\s*(Z|[+-]\d{2}:?\d{2})?$")
 
 
@@ -104,31 +136,46 @@ def read_rows(ws, keep_spaces):
 
 
 FIXED_WORDS = {"person_type", "result", "verification", "source", "status", "event_type", "outcome",
-               "qualification_status", "stage", "support_type"}
+               "qualification_status", "stage", "support_type",
+               "route", "test_name", "test_arm", "college_type", "outreach_wave", "pass_type", "price_plan",
+               "discount_type", "cancel_reason", "kind", "perk", "proof_type", "decision", "deny_reason", "direction"}
 
 
-def main(folder, out_path):
-    out = {"headers": {}, "problems": []}
-    for group, (file_name, sheets) in WORKBOOKS.items():
-        out[group] = {}
-        path = os.path.join(folder, file_name)
-        if not os.path.exists(path):
-            out["problems"].append({"sheet": file_name, "text": f"The file is missing from {folder}"})
+def read_workbook(out, group, path, sheets):
+    out[group] = {}
+    if not os.path.exists(path):
+        out["problems"].append({"sheet": os.path.basename(path), "text": f"The file is missing from {os.path.dirname(path)}"})
+        return
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    for key, sheet in sheets.items():
+        if sheet not in wb.sheetnames:
+            out["problems"].append({"sheet": f"{os.path.basename(path)} / {sheet}", "text": "The sheet is missing"})
             continue
-        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-        for key, sheet in sheets.items():
-            if sheet not in wb.sheetnames:
-                out["problems"].append({"sheet": f"{file_name} / {sheet}", "text": "The sheet is missing"})
-                continue
-            header, rows = read_rows(wb[sheet], FIXED_WORDS if group != "ops" else set())
-            out["headers"][f"{group}.{key}"] = header
-            out[group][key] = rows
-        wb.close()
+        header, rows = read_rows(wb[sheet], FIXED_WORDS if group != "ops" else set())
+        out["headers"][f"{group}.{key}"] = header
+        out[group][key] = rows
+    wb.close()
+
+
+def write(out, out_path):
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
 
 
+def main(folder, out_path, dataset="original"):
+    out = {"headers": {}, "problems": []}
+    books = dict(WORKBOOKS, bets=BET_WORKBOOK) if dataset == "simulated" else WORKBOOKS
+    for group, (file_name, sheets) in books.items():
+        read_workbook(out, group, os.path.join(folder, file_name), sheets)
+    write(out, out_path)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) == 4 and sys.argv[1] == "--program":
+        out = {"headers": {}, "problems": []}
+        read_workbook(out, "bets", os.path.abspath(sys.argv[2]), PROGRAM_SHEETS)
+        write(out, sys.argv[3])
+    elif len(sys.argv) in (3, 4):
+        main(*sys.argv[1:])
+    else:
         sys.exit(__doc__)
-    main(sys.argv[1], sys.argv[2])

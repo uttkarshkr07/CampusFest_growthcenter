@@ -6,6 +6,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { BarChart3, Calculator, Database, Handshake, LayoutDashboard, Inbox, ListChecks, MessageSquare, RotateCcw, Settings, Target, Users } from "lucide-react";
 import CopilotPanel from "./copilot/CopilotPanel";
 import Login from "./Login";
+import DatasetToggle from "./DatasetToggle";
+import { DATASET_IDS, DATASET_LABEL } from "@/lib/datasets";
 import { AUTH_ON } from "@/lib/auth/config";
 import { useAuth } from "@/lib/auth/store";
 import { useChat } from "@/lib/copilot/store";
@@ -31,7 +33,8 @@ const NAV = [
 
 export default function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving, story, loadProgress } = useStore();
+  const { status, error, load, asOf, setAsOf, toast, notify, resetDemo, saving, story, loadProgress, dataset } = useStore();
+  const otherDataset = DATASET_IDS.find((d) => d !== dataset)!;
   const [confirmReset, setConfirmReset] = useState(false);
 
   const { status: authStatus, me, init: initAuth, signOut } = useAuth();
@@ -90,14 +93,15 @@ export default function Shell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-line p-3 text-[11px] leading-snug text-muted">Challenge A: maximise people who actually attend. Data: fictional CampusFest 2025.</div>
+        <div className="border-t border-line p-3 text-[11px] leading-snug text-muted">Challenge A: maximise people who actually attend. Data: fictional CampusFest 2025. Showing: {DATASET_LABEL[dataset]}.</div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b border-line bg-white/95 px-5 py-2.5 backdrop-blur">
-          <Button variant="ghost" onClick={() => setConfirmReset(true)} disabled={!canReset} title={canReset ? "Restore the original dataset" : "Only the Reviewer account can reset the demo data"}>
+          <Button variant="ghost" onClick={() => setConfirmReset(true)} disabled={!canReset} title={canReset ? `Undo all changes to: ${DATASET_LABEL[dataset]}` : "Only the Reviewer account can reset the demo data"}>
             <RotateCcw className="h-3.5 w-3.5" /> Reset demo data
           </Button>
+          <DatasetToggle />
           {saving && <span className="text-[12px] text-muted">Saving...</span>}
           <div className="ml-auto flex gap-1">
             {quick.map((q) => (
@@ -130,6 +134,9 @@ export default function Shell({ children }: { children: ReactNode }) {
               </button>
             </div>
           )}
+          {dataset === "simulated" && (
+            <p className="order-last w-full rounded-md bg-warn-soft px-2 py-1 text-[12px] font-medium text-warn">SIMULATED: a made-up run of the fest with our bets. These are not real results.</p>
+          )}
         </header>
 
         <main className="min-w-0 flex-1 p-5">
@@ -151,9 +158,9 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <CopilotPanel />
 
-      <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset demo data?">
+      <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title={`Reset: ${DATASET_LABEL[dataset]}?`}>
         <p className="text-[13px] text-slate-700">
-          This restores every source table to the original CampusFest dataset and clears app-created campaigns, edits, tasks, settings changes and the change log. Tickets and their comments are cleared, and the one sample ticket is restored. Copilot chats are kept. It cannot be undone.
+          This restores every table of the {DATASET_LABEL[dataset]} to the data as loaded, and clears its app-created campaigns, edits, tasks, settings changes and change log. Its tickets and comments go back to the loaded ones. {DATASET_LABEL[otherDataset]} is not touched. Copilot chats are kept. It cannot be undone.
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button onClick={() => setConfirmReset(false)}>Cancel</Button>

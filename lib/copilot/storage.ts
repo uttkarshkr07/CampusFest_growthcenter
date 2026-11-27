@@ -1,5 +1,6 @@
 // Where chat sessions live. The screens only know this interface.
 import type { ChatMessage } from "./types";
+import type { DatasetId } from "@/lib/datasets";
 
 export interface SessionMeta {
   id: string;
@@ -18,8 +19,9 @@ export interface ChatStorage {
   saveMessage(sessionId: string, message: ChatMessage): Promise<void>;
 }
 
-export function localChatStorage(userKey: string): ChatStorage {
-  const root = `cfgc.chat.v1:${userKey}`;
+export function localChatStorage(userKey: string, dataset: DatasetId = "original"): ChatStorage {
+  // chats about the original keep the key they have always had
+  const root = `cfgc.chat.v1:${userKey}${dataset === "original" ? "" : `:${dataset}`}`;
   const read = <T>(key: string, fallback: T): T => {
     try {
       return JSON.parse(localStorage.getItem(key) ?? "") as T;

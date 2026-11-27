@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import { SPONSOR_SHEETS, type SponsorData } from "@/lib/engine/sponsor";
+import { tableName } from "@/lib/datasets";
+import { useStore } from "@/lib/store";
 import { getSupabase } from "@/lib/supabase";
 
 /**
@@ -34,7 +36,7 @@ export const useSponsor = create<SponsorState>((set, get) => ({
     pending = (async () => {
       const db = getSupabase();
       if (!db) throw new Error("The database is not configured.");
-      const { data, error } = await db.from("sponsor_data").select("sheet, rows");
+      const { data, error } = await db.from(tableName(useStore.getState().dataset, "sponsor_data")).select("sheet, rows");
       // before the table exists, or before it is loaded
       if (error && /could not find the table|does not exist/i.test(error.message)) return null;
       if (error) throw new Error(error.message);
@@ -63,3 +65,8 @@ export const useSponsor = create<SponsorState>((set, get) => ({
     set({ data: null, status: "idle", error: null });
   },
 }));
+
+// each dataset has its own sponsor records: forget them when the dataset changes
+useStore.subscribe((now, before) => {
+  if (now.dataset !== before.dataset) useSponsor.getState().clear();
+});

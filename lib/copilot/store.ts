@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { AUTH_ON } from "@/lib/auth/config";
 import { accessToken, useAuth } from "@/lib/auth/store";
+import { DATASET_LABEL, type DatasetId } from "@/lib/datasets";
 import { buildSummary, executeSponsorTool, executeToolAsOf } from "@/lib/engine";
 import { useSponsor } from "@/lib/sponsor/store";
 import { useStore } from "@/lib/store";
@@ -31,8 +32,11 @@ interface ChatState {
   status: string;
   model: { configured: boolean; models: string[] } | null;
   userKey: string | null;
+  /** the account and dataset whose chats are listed */
+  historyKey: string | null;
   setOpen: (open: boolean) => void;
-  init: (userKey: string) => Promise<void>;
+  /** datasetColumn is false only before the database patch that adds it */
+  init: (userKey: string, dataset: DatasetId, datasetColumn: boolean) => Promise<void>;
   /** forget the previous account's chats after signing out */
   reset: () => void;
   newChat: () => void;
@@ -48,9 +52,9 @@ interface ChatState {
 let storage: ChatStorage | null = null;
 
 /** Signed-in accounts keep chats in the database; without sign-in they stay in this browser. */
-function storageFor(userKey: string): ChatStorage {
+function storageFor(userKey: string, dataset: DatasetId, datasetColumn: boolean): ChatStorage {
   const db = AUTH_ON && userKey !== "local" ? getSupabase() : null;
-  return db ? databaseChatStorage(db) : localChatStorage(userKey);
+  return db ? databaseChatStorage(db, datasetColumn ? dataset : null) : localChatStorage(userKey, dataset);
 }
 
 /** The reason goes on screen and into the console, so a failure can be diagnosed from either. */
@@ -67,19 +71,21 @@ export const useChat = create<ChatState>((set, get) => ({
   open: false,
   model: null,
   userKey: null,
+  historyKey: null,
 
   setOpen: (open) => set({ open }),
 
   reset: () => {
     storage = null;
-    set({ ...EMPTY, open: false, userKey: null });
+    set({ ...EMPTY, open: false, userKey: null, historyKey: null });
   },
 
-  init: async (userKey) => {
-    if (get().userKey === userKey) return;
-    const own = storageFor(userKey);
+  init: async (userKey, dataset, datasetColumn) => {
+    const historyKey = `${userKey}|${dataset}|${datasetColumn}`;
+    if (get().historyKey === historyKey) return;
+    const own = storageFor(userKey, dataset, datasetColumn);
     storage = own;
-    set({ ...EMPTY, userKey, loading: true });
+    set({ ...EMPTY, userKey, historyKey, loading: true });
     try {
       const sessions = await own.listSessions();
       const currentId = sessions[0]?.id ?? null;
@@ -144,10 +150,15 @@ export const useChat = create<ChatState>((set, get) => ({
 
   send: async (question) => {
     const text = question.trim().slice(0, 1000);
-    const { data, asOf } = useStore.getState();
+    const { data, asOf, dataset } = useStore.getState();
     // this account's storage, kept even if someone switches account while the answer is on its way
     const own = storage;
     if (!text || get().busy || get().loading || !data || !own) return;
+    // the toggle is locked while an answer is on its way; this also makes sure a lookup never reads the other dataset
+    const current = () => {
+      const now = useStore.getState();
+      return (now.dataset === dataset ? now.data : null) ?? data;
+    };
     const me = useAuth.getState().me;
     const history = get().messages;
     const isNew = !get().currentId;
@@ -183,14 +194,14 @@ export const useChat = create<ChatState>((set, get) => ({
           question: text,
           selectedDate: asOf,
           summary: buildSummary(data, asOf),
-          context: { today: asOf, ...(me ? { signedInUser: { name: me.name, teams: me.teams, isReviewer: me.isReviewer } } : {}) },
+          context: { today: asOf, dataset: dataset === "simulated" ? `${DATASET_LABEL.simulated} (a made-up simulation, not real results)` : DATASET_LABEL.original, ...(me ? { signedInUser: { name: me.name, teams: me.teams, isReviewer: me.isReviewer } } : {}) },
           history,
           callModel: async (req) => callModel(req, await accessToken()),
           // read the store again so a data edit made mid-answer is used
           runTool: (name, args) =>
             name === SPONSOR_TOOL
               ? useSponsor.getState().load().then((sponsor) => executeSponsorTool(sponsor, args, asOf))
-              : executeToolAsOf(useStore.getState().data ?? data, name, args, asOf),
+              : executeToolAsOf(current(), name, args, asOf),
           onStatus: (status) => storage === own && set({ status }),
         });
       } catch (e) {

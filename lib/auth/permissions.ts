@@ -27,7 +27,7 @@ export interface Me {
 /** `null` means sign-in is switched off, so nothing is restricted. */
 export type Viewer = Me | null;
 
-export type EditableThing = SourceTable | "campaign_plan" | "settings";
+export type EditableThing = SourceTable | "campaign_plan" | "settings" | "bet_thresholds";
 
 const OWNER_TEAM: Partial<Record<EditableThing, Team>> = {
   campaigns: "publicity",
@@ -35,6 +35,7 @@ const OWNER_TEAM: Partial<Record<EditableThing, Team>> = {
   daily_marketing: "publicity",
   targets: "publicity",
   settings: "publicity",
+  bet_thresholds: "publicity",
   checkins: "events",
 };
 

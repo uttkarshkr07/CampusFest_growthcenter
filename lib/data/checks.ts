@@ -5,28 +5,24 @@ import { dataQuality, type Issue } from "../engine/quality";
 import { DEFAULT_SETTINGS } from "../engine/settings";
 import type { SponsorData } from "../engine/sponsor";
 import type { Dataset } from "../engine/types";
+import type { DatasetId } from "../datasets";
+import { betIssues, type BetSource } from "./bet-checks";
+import { BET_TABLES, BET_TABLE_NAMES, SIMULATED_EXTRA_COLUMNS, type Kind } from "./bet-spec";
+import { asNumber, convertTable, empty, isDate, rowNo, type Problem, type Row, type TableSpec } from "./convert";
 
-export interface Problem {
-  sheet: string;
-  row?: number;
-  text: string;
-}
-type Row = Record<string, unknown>;
+export { isDate, isDateTime } from "./convert";
+export type { Problem } from "./convert";
+
 export interface Converted {
   headers: Record<string, string[]>;
   problems: Problem[];
   attendee: Record<string, Row[]>;
   sponsor: Record<string, Row[]>;
   ops: Record<string, Row[]>;
+  /** Bet Dataset.xlsx: the simulated dataset only */
+  bets?: Record<string, Row[]>;
 }
 
-type Kind = "text" | "number" | "boolean" | "date" | "datetime";
-interface TableSpec {
-  sheet: string;
-  columns: Record<string, Kind>;
-  /** the database refuses an empty value */
-  required: string[];
-}
 const cols = (spec: string): Record<string, Kind> =>
   Object.fromEntries(
     spec.split(" ").map((c) => {
@@ -73,20 +69,6 @@ const TEAMS = ["publicity", "sponsorship", "events"];
 const PRIORITIES = ["low", "medium", "high"];
 const PLAN_STATUS = ["planned", "active", "paused", "stopped"];
 
-const empty = (v: unknown) => v == null || (typeof v === "string" && v.trim() === "");
-
-/** a real calendar date written as YYYY-MM-DD */
-export function isDate(v: unknown): v is string {
-  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
-  const d = new Date(`${v}T00:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
-}
-export function isDateTime(v: unknown): v is string {
-  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(v) && isDate(v.slice(0, 10)) && !Number.isNaN(Date.parse(v));
-}
-const asNumber = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim()) ? Number(v) : null);
-const asBoolean = (v: unknown): boolean | null => (typeof v === "boolean" ? v : typeof v === "string" && /^(true|false)$/i.test(v.trim()) ? v.trim().toLowerCase() === "true" : null);
-
 export interface TicketOut {
   ticket_key: string;
   id: string;
@@ -117,11 +99,11 @@ export interface CheckResult {
   counts: Record<string, number>;
 }
 
-export function checkDataset(input: Converted, options: { accountOwnerIds: string[]; ticketId: (key: string) => string }): CheckResult {
+export function checkDataset(input: Converted, options: { accountOwnerIds: string[]; ticketId: (key: string) => string; dataset?: DatasetId }): CheckResult {
   const errors: Problem[] = [...input.problems];
   const warnings: Problem[] = [];
   const originals: Record<string, Row[]> = {};
-  const rowNo = (r: Row) => (typeof r.__row === "number" ? r.__row : undefined);
+  const simulated = options.dataset === "simulated";
 
   const needColumns = (key: string, sheet: string, wanted: string[]) => {
     const have = input.headers[key];
@@ -130,39 +112,30 @@ export function checkDataset(input: Converted, options: { accountOwnerIds: strin
     if (missing.length) errors.push({ sheet, row: 1, text: `Missing column(s): ${missing.join(", ")}` });
     return !missing.length;
   };
+  /** checks the columns, then puts every value in its type; null when the sheet cannot be read */
+  const readSheet = (key: string, spec: TableSpec, source: Row[] | undefined, ignored: string[] = []): Row[] | null => {
+    if (!source || !needColumns(key, spec.sheet, Object.keys(spec.columns))) return null;
+    const extra = (input.headers[key] ?? []).filter((c) => !(c in spec.columns) && !ignored.includes(c));
+    if (extra.length) warnings.push({ sheet: spec.sheet, row: 1, text: `Extra column(s) are not loaded: ${extra.join(", ")}` });
+    return convertTable(spec, source, errors, warnings);
+  };
 
   // ---- attendee sheets, plus the activations sheet from the sponsor workbook ----
   for (const [table, spec] of Object.entries(ATTENDEE)) {
     const fromSponsor = table === "sponsor_activations";
-    const source = fromSponsor ? input.sponsor.activations : input.attendee[table];
-    const key = fromSponsor ? "sponsor.activations" : `attendee.${table}`;
-    if (!source || !needColumns(key, spec.sheet, Object.keys(spec.columns))) continue;
-    const extra = (input.headers[key] ?? []).filter((c) => !(c in spec.columns));
-    if (extra.length) warnings.push({ sheet: spec.sheet, row: 1, text: `Extra column(s) are not loaded: ${extra.join(", ")}` });
-    const emptied = new Map<string, { count: number; example: string; row?: number }>();
-    originals[`original_${table}`] = source.map((r) => {
-      const out: Row = {};
-      for (const [column, kind] of Object.entries(spec.columns)) {
-        const v = r[column] ?? null;
-        let value: unknown = null;
-        if (!empty(v)) {
-          if (kind === "text") value = String(v);
-          else if (kind === "number") value = asNumber(v);
-          else if (kind === "boolean") value = asBoolean(v);
-          else if (kind === "date") value = isDate(v) ? v : null;
-          else value = isDateTime(v) ? v : null;
-          if (value === null) {
-            const e = emptied.get(column) ?? { count: 0, example: JSON.stringify(v), row: rowNo(r) };
-            e.count++;
-            emptied.set(column, e);
-          }
-        }
-        if (value === null && spec.required.includes(column)) errors.push({ sheet: spec.sheet, row: rowNo(r), text: `${column} is ${empty(v) ? "empty" : `not readable: ${JSON.stringify(v)}`}, and it is required` });
-        out[column] = value;
-      }
-      return out;
-    });
-    for (const [column, e] of emptied) warnings.push({ sheet: spec.sheet, row: e.row, text: `${e.count} value(s) in ${column} are not a readable ${spec.columns[column]} and will load as empty (first: ${e.example})` });
+    const added = (simulated && SIMULATED_EXTRA_COLUMNS[table]) || [];
+    const full = added.length ? { ...spec, columns: { ...spec.columns, ...Object.fromEntries(added.map((c) => [c, "text" as Kind])) } } : spec;
+    const rows = readSheet(fromSponsor ? "sponsor.activations" : `attendee.${table}`, full, fromSponsor ? input.sponsor.activations : input.attendee[table]);
+    if (rows) originals[`original_${table}`] = rows;
+  }
+
+  // ---- bet and program sheets ----
+  if (simulated) {
+    for (const table of BET_TABLE_NAMES) {
+      const rows = readSheet(`bets.${table}`, BET_TABLES[table], input.bets?.[table], table === "program_events" ? ["day"] : []);
+      if (rows) originals[`original_${table}`] = rows;
+      else if (!input.headers[`bets.${table}`] && !input.problems.some((p) => p.sheet.endsWith(BET_TABLES[table].sheet) || p.sheet === "Bet Dataset.xlsx")) errors.push({ sheet: BET_TABLES[table].sheet, text: "The sheet is missing" });
+    }
   }
 
   const event = originals.original_event;
@@ -298,6 +271,10 @@ export function checkDataset(input: Converted, options: { accountOwnerIds: strin
   const dataset = { ...Object.fromEntries(Object.keys(ATTENDEE).map((t) => [t, asRows(t)])), campaign_plan: [], team: originals.original_team, tasks: [], settings: [], change_log: [], tickets: [], ticket_events: [] } as unknown as Dataset;
   const sponsorComplete = Object.keys(SPONSOR_NEEDS).every((k) => input.sponsor[k]);
   const issues = dataQuality(dataset, sponsorComplete ? (input.sponsor as unknown as SponsorData) : null);
+  if (simulated && input.bets && BET_TABLE_NAMES.every((t) => input.bets![t])) {
+    const attendee = { event: input.attendee.event ?? [], people: input.attendee.people ?? [], registrations: input.attendee.registrations ?? [], checkins: input.attendee.checkins ?? [], ownerIds };
+    issues.push(...betIssues(input.bets as BetSource, attendee));
+  }
 
   const sponsor = Object.fromEntries(
     Object.keys(SPONSOR_NEEDS).map((k) => [k, (input.sponsor[k] ?? []).map((r) => Object.fromEntries(Object.entries(r).filter(([c]) => c !== "__row")))]),

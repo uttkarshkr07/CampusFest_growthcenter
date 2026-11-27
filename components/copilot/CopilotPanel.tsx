@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Maximize2, MessageSquarePlus, X } from "lucide-react";
 import { useAuth } from "@/lib/auth/store";
+import { DATASET_SHORT } from "@/lib/datasets";
 import { useChat } from "@/lib/copilot/store";
 import { MASCOT } from "@/lib/mascot";
 import { useStore } from "@/lib/store";
@@ -23,12 +24,15 @@ export function MascotFace({ size = 28 }: { size?: number }) {
 export default function CopilotPanel() {
   const { open, setOpen, init, newChat, sessions, currentId, openSession, busy } = useChat();
   const ready = useStore((s) => s.status === "ready");
+  const dataset = useStore((s) => s.dataset);
+  const simulated = useStore((s) => s.simulated);
   const path = usePathname();
   const userKey = useAuth((s) => s.me?.userId ?? "local");
 
+  // each dataset has its own chats; before the first load it is not yet known which one is shown
   useEffect(() => {
-    void init(userKey);
-  }, [init, userKey]);
+    if (simulated !== "unknown") void init(userKey, dataset, simulated !== "unpatched");
+  }, [init, userKey, dataset, simulated]);
 
   if (!ready || path.startsWith("/copilot")) return null;
   if (!open)
@@ -44,10 +48,10 @@ export default function CopilotPanel() {
         <MascotFace />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-semibold">{MASCOT.name}</div>
-          <div className="text-[11px] text-muted">AI growth copilot</div>
+          <div className="truncate text-[11px] text-muted" title="The data being answered from">{DATASET_SHORT[dataset]}</div>
         </div>
         {sessions.length > 0 && (
-          <select className="max-w-36 rounded-md border border-line bg-white px-1.5 py-1 text-[12px]" value={currentId ?? ""} disabled={busy} onChange={(e) => (e.target.value ? openSession(e.target.value) : newChat())} aria-label="Chat history">
+          <select className="max-w-32 rounded-md border border-line bg-white px-1.5 py-1 text-[12px]" value={currentId ?? ""} disabled={busy} onChange={(e) => (e.target.value ? openSession(e.target.value) : newChat())} aria-label="Chat history">
             <option value="">New chat</option>
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>{s.title}</option>

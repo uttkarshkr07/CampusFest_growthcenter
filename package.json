@@ -12,7 +12,8 @@
     "deploy": "node scripts/patch-opennext.mjs && opennextjs-cloudflare build && node scripts/check-chunks.mjs && node scripts/strip-env.mjs && wrangler deploy",
     "preview": "node scripts/patch-opennext.mjs && opennextjs-cloudflare build && node scripts/check-chunks.mjs && node scripts/strip-env.mjs && wrangler dev",
     "data:check": "vite-node -c vitest.config.ts scripts/load_dataset.ts",
-    "data:load": "vite-node -c vitest.config.ts scripts/load_dataset.ts -- --load"
+    "data:load": "vite-node -c vitest.config.ts scripts/load_dataset.ts -- --load",
+    "data:program": "vite-node -c vitest.config.ts scripts/import_program.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
@@ -25,6 +26,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@opennextjs/cloudflare": "1.19.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

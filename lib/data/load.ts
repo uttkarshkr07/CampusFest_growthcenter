@@ -1,7 +1,9 @@
 // Loads the dataset. Big tables come in pages and are kept in the browser, so a table is downloaded
 // again only after it has changed. The database still checks the sign-in on every load.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Dataset } from "@/lib/engine/types";
+import type { BetData, Dataset } from "@/lib/engine/types";
+import { rpcName, tableName, type DatasetId } from "@/lib/datasets";
+import { PAGED_BET_TABLES, type PagedBetTable } from "./bet-spec";
 import { PAGED_TABLES, fillNames, pageRanges, toRows, type Columns, type PagedTable } from "./decode";
 
 const PARALLEL = 3;
@@ -57,8 +59,10 @@ async function withRetry<T>(what: string, run: () => PromiseLike<{ data: unknown
 
 interface AppData {
   versions: Record<string, string>;
-  ranges: Record<PagedTable, [number, number, number]>;
+  ranges: Record<PagedTable | PagedBetTable, [number, number, number]>;
   tables: Omit<Dataset, PagedTable>;
+  /** the small bet tables: simulated dataset only */
+  bets?: Partial<BetData>;
 }
 
 export interface Loaded {
@@ -67,27 +71,31 @@ export interface Loaded {
   hasTickets: boolean;
 }
 
-export async function loadDataset(db: SupabaseClient, onProgress: (text: string) => void): Promise<Loaded> {
-  const head = await db.rpc("get_app_data");
+export async function loadDataset(db: SupabaseClient, dataset: DatasetId, onProgress: (text: string) => void): Promise<Loaded> {
+  const simulated = dataset === "simulated";
+  const headName = rpcName(dataset, "get_app_data");
+  const head = await db.rpc(headName);
   // before the large-data patch: one request for everything, as before
-  if (head.error && /could not find the function|does not exist/i.test(head.error.message)) {
+  if (!simulated && head.error && /could not find the function|does not exist/i.test(head.error.message)) {
     const all = await withRetry<Dataset>("Loading the data", () => db.rpc("get_dataset"));
     return { data: all, hasTickets: "tickets" in all };
   }
-  const app = head.error || !head.data ? await withRetry<AppData>("Loading the data", () => db.rpc("get_app_data")) : (head.data as AppData);
+  const app = head.error || !head.data ? await withRetry<AppData>("Loading the data", () => db.rpc(headName)) : (head.data as AppData);
+  const paged: readonly (PagedTable | PagedBetTable)[] = simulated ? [...PAGED_TABLES, ...PAGED_BET_TABLES] : PAGED_TABLES;
 
   const cache = await openCache();
-  const total = PAGED_TABLES.reduce((a, t) => a + app.ranges[t][2], 0);
+  const total = paged.reduce((a, t) => a + app.ranges[t][2], 0);
   let done = 0;
   const progress = () => onProgress(`Loading the dataset: ${total ? Math.round((done / total) * 100) : 100}% of ${total.toLocaleString("en-IN")} rows`);
   progress();
 
   const jobs: (() => Promise<void>)[] = [];
-  const big = {} as Record<PagedTable, Columns>;
-  const fetched: { table: PagedTable; pages: Columns[] }[] = [];
-  for (const table of PAGED_TABLES) {
+  const big = {} as Record<PagedTable | PagedBetTable, Columns>;
+  const fetched: { table: PagedTable | PagedBetTable; pages: Columns[] }[] = [];
+  for (const table of paged) {
     const version = app.versions[table] ?? "";
-    const kept = await cacheGet(cache, table);
+    // each dataset keeps its own copy, under the database's table name
+    const kept = await cacheGet(cache, tableName(dataset, table));
     if (kept && version && kept.version === version && kept.rows.length === app.ranges[table][2]) {
       big[table] = kept;
       done += kept.rows.length;
@@ -98,7 +106,7 @@ export async function loadDataset(db: SupabaseClient, onProgress: (text: string)
     fetched.push({ table, pages });
     ranges.forEach(([from, to], i) =>
       jobs.push(async () => {
-        pages[i] = await withRetry<Columns>(`Loading ${table.replace(/_/g, " ")}`, () => db.rpc("get_rows", { p_table: table, p_from: from, p_to: to }));
+        pages[i] = await withRetry<Columns>(`Loading ${table.replace(/_/g, " ")}`, () => db.rpc(rpcName(dataset, "get_rows"), { p_table: table, p_from: from, p_to: to }));
         done += pages[i].rows.length;
         progress();
       }),
@@ -113,11 +121,12 @@ export async function loadDataset(db: SupabaseClient, onProgress: (text: string)
   );
   for (const { table, pages } of fetched) {
     big[table] = { cols: pages[0]?.cols ?? [], rows: pages.flatMap((p) => p.rows) };
-    cachePut(cache, table, { ...big[table], version: app.versions[table] ?? "" });
+    cachePut(cache, tableName(dataset, table), { ...big[table], version: app.versions[table] ?? "" });
   }
 
   onProgress("Preparing the figures...");
   const rows = Object.fromEntries(PAGED_TABLES.map((t) => [t, toRows(big[t])])) as Record<PagedTable, Record<string, unknown>[]>;
   fillNames(app.tables, rows);
-  return { data: { ...app.tables, ...rows } as unknown as Dataset, hasTickets: true };
+  const bets = simulated ? ({ ...app.bets, ...Object.fromEntries(PAGED_BET_TABLES.map((t) => [t, toRows(big[t])])) } as BetData) : undefined;
+  return { data: { ...app.tables, ...rows, ...(bets ? { bets } : {}) } as unknown as Dataset, hasTickets: true };
 }

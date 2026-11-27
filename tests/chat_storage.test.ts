@@ -26,7 +26,7 @@ describe.skipIf(!process.env.CHAT_LIVE)("chat history in the real database", () 
       const db = createClient(e.NEXT_PUBLIC_SUPABASE_URL, e.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
       const { error } = await db.auth.signInWithPassword({ email: ACCOUNTS.find((a) => a.key === key)!.email, password: e.NEXT_PUBLIC_DEMO_PASSWORD });
       if (error) throw new Error(`${key} sign-in failed: ${error.message}`);
-      return databaseChatStorage(db);
+      return databaseChatStorage(db, null);
     };
     const mine = await signIn("reviewer");
     const other = await signIn("arjun");

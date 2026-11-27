@@ -76,7 +76,7 @@ describe("paged loading", () => {
   it("gives the same rows, names and figures as the full load", async () => {
     const source = seedWithIds();
     const progress: string[] = [];
-    const { data } = await loadDataset(fakeDb(source).db, (p) => progress.push(p));
+    const { data } = await loadDataset(fakeDb(source).db, "original", (p) => progress.push(p));
     for (const t of PAGED_TABLES) {
       expect(data[t].length).toBe(source[t].length);
       const [got, want] = [data[t], source[t]] as unknown as Record<string, unknown>[][];
@@ -90,7 +90,7 @@ describe("paged loading", () => {
 
   it("tries a dropped page again", async () => {
     const { db, calls } = fakeDb(seedWithIds(), { failFirst: true });
-    const { data } = await loadDataset(db, () => {});
+    const { data } = await loadDataset(db, "original", () => {});
     expect(data.people.length).toBe(3685);
     const pages = calls.filter((c) => c.startsWith("get_rows"));
     expect(pages.length).toBe(new Set(pages).size + 1);
@@ -98,7 +98,7 @@ describe("paged loading", () => {
 
   it("still works before the database file is run", async () => {
     const { db, calls } = fakeDb(seedWithIds(), { oldDatabase: true });
-    await loadDataset(db, () => {});
+    await loadDataset(db, "original", () => {});
     expect(calls).toEqual(["get_app_data", "get_dataset"]);
   });
 

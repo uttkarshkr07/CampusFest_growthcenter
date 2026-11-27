@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChatStorage, SessionMeta } from "./storage";
 import type { ChatMessage } from "./types";
+import type { DatasetId } from "@/lib/datasets";
 
 const MAX_SESSIONS = 200;
 const MAX_MESSAGES = 500;
@@ -11,10 +12,15 @@ function check(what: string, error: { message: string } | null) {
   if (error) throw new Error(`${what}: ${error.message}`);
 }
 
-export function databaseChatStorage(db: SupabaseClient): ChatStorage {
+/**
+ * `dataset` keeps each dataset's chats apart: only its own are listed, and new ones are marked with it.
+ * null = the database has no dataset column yet (before the session 4 patch), where every chat is about the original.
+ */
+export function databaseChatStorage(db: SupabaseClient, dataset: DatasetId | null): ChatStorage {
   return {
     listSessions: async () => {
-      const { data, error } = await db.from("chat_sessions").select("id, title, created_at, updated_at").order("updated_at", { ascending: false }).limit(MAX_SESSIONS);
+      const all = db.from("chat_sessions").select("id, title, created_at, updated_at");
+      const { data, error } = await (dataset ? all.eq("dataset", dataset) : all).order("updated_at", { ascending: false }).limit(MAX_SESSIONS);
       check("list chats", error);
       return (data ?? []).map((r): SessionMeta => ({ id: r.id, title: r.title, createdAt: r.created_at, updatedAt: r.updated_at }));
     },
@@ -24,7 +30,7 @@ export function databaseChatStorage(db: SupabaseClient): ChatStorage {
       return (data ?? []).map((r) => r.body as ChatMessage);
     },
     createSession: async (meta) => {
-      const { error } = await db.from("chat_sessions").insert({ id: meta.id, title: meta.title.slice(0, 80) });
+      const { error } = await db.from("chat_sessions").insert({ id: meta.id, title: meta.title.slice(0, 80), ...(dataset ? { dataset } : {}) });
       check("start chat", error);
     },
     renameSession: async (sessionId, title) => {

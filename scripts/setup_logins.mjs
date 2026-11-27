@@ -6,8 +6,8 @@
 // SUPABASE_SERVICE_ROLE_KEY (local only) and NEXT_PUBLIC_DEMO_PASSWORD. It prints no passwords or keys.
 //
 // The checks are safe for your data: "can edit" is tested by saving a value back unchanged, and the
-// temporary tasks and chat it creates are removed. One check asks a non-reviewer to reset the demo
-// and expects a refusal; if that rule were broken, the reset would run and clear edits and tasks.
+// temporary tasks and chat it creates are removed. One check per dataset asks a non-reviewer to reset
+// it and expects a refusal; if that rule were broken, the reset would run and clear edits and tasks.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -206,6 +206,70 @@ else if (clients.reviewer && clients.dev) {
   check(!!wipe.error, "Dev: must not be able to start a data load");
 }
 
+// the simulated dataset (patch_session4_datasets.sql): the same rules on its own tables
+const simStatus = await admin.rpc("sim_dataset_status");
+const hasSim = !simStatus.error;
+if (!hasSim) console.log("Two-dataset patch not run yet: its checks are skipped.");
+else if (clients.reviewer && clients.dev) {
+  const newTables = ["colleges", "contingents", "contingent_tier_events", "squads", "passes", "payments", "perk_grants", "insurance_claims",
+    "venues", "program_events", "seat_booking_history", "seat_scans", "waitlist_entries", "exchange_offers", "competition_results",
+    "hackathon_teams", "hackathon_members", "bets", "bet_thresholds", "bet_milestones", "bet_spend"];
+  for (const [name, db] of [["Reviewer", clients.reviewer], ["Dev", clients.dev]]) {
+    for (const t of [...newTables.map((t) => `sim_${t}`), "venues", "program_events"]) {
+      const read = await db.from(t).select("_row_id").limit(1);
+      check(!read.error, `${name}: can read ${t} (${read.error?.message})`);
+    }
+    for (const t of ["sim_original_passes", "sim_original_people", "sim_original_tickets"]) {
+      const peek = await db.from(t).select("*").limit(1);
+      check(!!peek.error || peek.data.length === 0, `${name}: must not read ${t}`);
+    }
+    const head = await db.rpc("sim_get_app_data");
+    check(!head.error && !!head.data?.ranges, `${name}: can load the simulated app data (${head.error?.message ?? "empty"})`);
+  }
+  // view only: even the Reviewer may not add a row (the temporary row is removed if the rule is broken)
+  for (const t of ["sim_passes", "sim_payments", "sim_bets", "venues"]) {
+    const added = await clients.reviewer.from(t).insert({ _source: "role check" }).select("_row_id");
+    check(!!added.error, `Reviewer: must not add rows to ${t}`);
+    if (!added.error) await admin.from(t).delete().eq("_source", "role check");
+  }
+  const wipeSim = await clients.dev.rpc("sim_prepare_data_load");
+  check(!!wipeSim.error, "Dev: must not be able to start a simulated data load");
+  const direct = await clients.reviewer.from("sim_tickets").insert({ title: "ROLE CHECK (temporary)", from_team: "sponsorship", to_team: "publicity", raised_on: "2025-04-19" }).select("id");
+  check(!!direct.error, "Reviewer: must not write the simulated ticket table directly");
+
+  const chat = crypto.randomUUID();
+  const made = await clients.reviewer.from("chat_sessions").insert({ id: chat, title: "role check (temporary)", dataset: "simulated" });
+  check(!made.error, `Reviewer: can create a chat about the simulated data (${made.error?.message})`);
+  const listed = await clients.reviewer.from("chat_sessions").select("id").eq("dataset", "original").eq("id", chat);
+  check(!listed.error && listed.data.length === 0, "Reviewer: a simulated chat is not listed with the original's chats");
+  await clients.reviewer.from("chat_sessions").delete().eq("id", chat);
+
+  if (simStatus.data !== true) console.log("Nothing is loaded into the simulated dataset yet: its edit, task and reset checks are skipped.");
+  else {
+    // "can edit" is tested by saving a value back unchanged
+    for (const [table, key, column] of [["campaigns", "_row_id", "campaign_name"], ["checkins", "_row_id", "result"], ["people", "_row_id", "person_name"], ["settings", "key", "value"], ["bet_thresholds", "_row_id", "scale_at"]]) {
+      const sample = await admin.from(`sim_${table}`).select(`${key}, ${column}`).order(key).limit(1);
+      if (!sample.data?.length) continue;
+      const row = sample.data[0];
+      for (const a of accounts) {
+        if (!clients[a.key]) continue;
+        const res = await clients[a.key].from(`sim_${table}`).update({ [column]: row[column] }).eq(key, row[key]).select(key);
+        const should = table === "bet_thresholds" ? a.reviewer || a.teams.includes("publicity") : mayEdit(a, table);
+        check((!res.error && res.data.length === 1) === should, `${a.name}: sim_${table} edit should be ${should ? "allowed" : "blocked"}${res.error ? ` (${res.error.message})` : ""}`);
+      }
+    }
+    for (const a of accounts) {
+      if (!clients[a.key]) continue;
+      const should = a.reviewer || a.teams.includes("publicity");
+      const res = await clients[a.key].from("sim_tasks").insert({ title: "ROLE CHECK (temporary)", owner_id: taskOwners.publicity }).select("id");
+      check((!res.error && res.data.length === 1) === should, `${a.name}: creating a simulated publicity task should be ${should ? "allowed" : "blocked"}${res.error ? ` (${res.error.message})` : ""}`);
+    }
+    await admin.from("sim_tasks").delete().eq("title", "ROLE CHECK (temporary)");
+    const refused = await clients.dev.rpc("sim_reset_demo");
+    check(!!refused.error, "Dev: simulated reset must be refused (IT RAN: its edits and tasks were cleared)");
+  }
+}
+
 const visitor = createClient(url, anonKey, noSession);
 const open = await visitor.rpc("get_dataset");
 const locked = !!open.error;
@@ -227,6 +291,14 @@ if (hasTickets) {
 if (hasPaged) {
   check(!!(await visitor.rpc("get_app_data")).error, "Not signed in: cannot load the app data");
   check(!!(await visitor.rpc("get_rows", { p_table: "people", p_from: 1, p_to: 10 })).error, "Not signed in: cannot load rows");
+}
+if (hasSim) {
+  for (const t of ["sim_people", "sim_passes", "sim_tickets", "venues"]) {
+    const peek = await visitor.from(t).select("*").limit(1);
+    check(!!peek.error || peek.data.length === 0, `Not signed in: cannot read ${t}`);
+  }
+  check(!!(await visitor.rpc("sim_get_app_data")).error, "Not signed in: cannot load the simulated data");
+  check(!!(await visitor.rpc("sim_get_rows", { p_table: "people", p_from: 1, p_to: 10 })).error, "Not signed in: cannot load simulated rows");
 }
 if (expectLocked) check(locked, "Not signed in: get_dataset must be refused (has part B been run?)");
 
