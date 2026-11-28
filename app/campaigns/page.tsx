@@ -16,15 +16,15 @@ import { inr, num, pct } from "@/lib/format";
 type SortKey = keyof CampaignMetrics | "flag";
 
 const COLS: { key: SortKey; label: string; help: string; fmt: (r: CampaignMetrics) => string }[] = [
-  { key: "spend", label: "Spend", help: "Net ledger spend up to as-of (vendor credits subtract).", fmt: (r) => inr(r.spend) },
+  { key: "spend", label: "Spend", help: "Net marketing spend up to as-of (vendor credits subtract). For a campaign tied to a bet, its bet operating spend is shown after the plus and is part of every cost per person.", fmt: (r) => (r.betSpend ? `${inr(r.spend)} + ${inr(r.betSpend)} bet` : inr(r.spend)) },
   { key: "registered", label: "Registered", help: "Distinct external people whose registration came from this campaign.", fmt: (r) => num(r.registered) },
   { key: "confirmed", label: "Confirmed", help: "Registered people whose latest status is confirmed (at event start, once the event begins).", fmt: (r) => num(r.confirmed) },
   { key: "attended", label: "Attended", help: "Distinct external people with an admitted + verified check-in, attributed via their registration.", fmt: (r) => (r.attended == null ? "not yet" : num(r.attended)) },
   { key: "showUpPct", label: "Show-up", help: "Attended / registered.", fmt: (r) => pct(r.showUpPct) },
-  { key: "inrPerRegistration", label: "₹ / reg", help: "Spend / registered people.", fmt: (r) => inr(r.inrPerRegistration) },
-  { key: "inrPerConfirmed", label: "₹ / confirmed", help: "Spend / confirmed people. The pre-event proxy for cost per attendee.", fmt: (r) => inr(r.inrPerConfirmed) },
-  { key: "inrPerAttendee", label: "₹ / attendee", help: "Spend / actual attendees. The metric that matters for Challenge A.", fmt: (r) => inr(r.inrPerAttendee) },
-  { key: "shareOfSpendPct", label: "% spend", help: "Share of total campaign spend.", fmt: (r) => pct(r.shareOfSpendPct) },
+  { key: "inrPerRegistration", label: "₹ / reg", help: "Cost (marketing + any bet operating spend) / registered people.", fmt: (r) => inr(r.inrPerRegistration) },
+  { key: "inrPerConfirmed", label: "₹ / confirmed", help: "Cost / confirmed people. The pre-event proxy for cost per attendee.", fmt: (r) => inr(r.inrPerConfirmed) },
+  { key: "inrPerAttendee", label: "₹ / attendee", help: "Cost (marketing + any bet operating spend) / actual attendees. The metric that matters for Challenge A.", fmt: (r) => inr(r.inrPerAttendee) },
+  { key: "shareOfSpendPct", label: "% spend", help: "Share of total campaign cost.", fmt: (r) => pct(r.shareOfSpendPct) },
   { key: "shareOfAttendeesPct", label: "% attendees", help: "Share of campaign-attributed attendees. Compare with % spend.", fmt: (r) => pct(r.shareOfAttendeesPct) },
   { key: "engagedSharePct", label: "Engaged", help: "Share of registrants who submitted an event question. Context only: questions are recorded for some campaigns only.", fmt: (r) => pct(r.engagedSharePct) },
 ];

@@ -2,6 +2,7 @@ import { prepare, type Prepared, type WithMs } from "./prepare";
 import type { Dataset, HistoryRow, RegistrationRow, Result, TaskRow } from "./types";
 import { addDays, daysBetween, endOfIstDay, istDay, resolveAsOf, toMs } from "./time";
 import { countsAsAdmission } from "./prepare";
+import { dayBy, numberOf, text } from "./betview";
 import { dataQuality, qualitySummary } from "./quality";
 
 // ---------------------------------------------------------------------------
@@ -129,6 +130,24 @@ export function spendAsOf(s: Snapshot, campaignId?: string): number {
     if (campaignId && d.campaign_id !== campaignId) continue;
     t += Number(d.marketing_spend_inr ?? 0);
   }
+  return t;
+}
+
+/**
+ * Bets whose operating money belongs to one sign-up route, so it counts as that campaign's cost (simulated run design:
+ * C08 is the contingent route of bet B1, C10 the hackathon page of bet B5). The other bets act on every campaign's
+ * registrants, so their spend stays at plan level (bet tracker).
+ */
+export const BET_CAMPAIGN: Readonly<Record<string, string>> = { B1: "C08", B5: "C10" };
+
+/** Bet operating spend booked to one campaign up to as-of (same day rule as daily marketing rows; the last row per spend_id wins). */
+export function betSpendAsOf(data: Dataset, asOfMs: number, campaignId: string): number {
+  const rows = new Map<string, Record<string, unknown>>();
+  (data.bets?.bet_spend ?? []).forEach((r, i) => {
+    if (!r._deleted) rows.set(text(r.spend_id) || `#${i}`, r);
+  });
+  let t = 0;
+  for (const r of rows.values()) if (BET_CAMPAIGN[text(r.bet_id)] === campaignId && dayBy(r.spent_on, asOfMs)) t += numberOf(r.amount_inr);
   return t;
 }
 
@@ -295,7 +314,12 @@ export interface CampaignMetrics {
   source: string;
   app_status: string;
   budget_inr: number | null;
+  /** net marketing spend (daily marketing rows) */
   spend: number;
+  /** operating spend of a bet tied to this campaign (BET_CAMPAIGN); 0 for every other campaign */
+  betSpend: number;
+  /** spend + betSpend: the cost behind every INR-per-person figure */
+  cost: number;
   identified: number;
   registered: number;
   confirmed: number;
@@ -319,9 +343,14 @@ export function campaignTable(data: Dataset, asOf: string) {
   const hidden = p.campaigns.length - live.length;
 
   const totalSpend = spendAsOf(s);
+  const betCost = new Map(live.map((c) => [c.campaign_id, betSpendAsOf(data, s.asOfMs, c.campaign_id)]));
+  const totalBetSpend = [...betCost.values()].reduce((a, b) => a + b, 0);
+  const totalCost = totalSpend + totalBetSpend;
   const rows: CampaignMetrics[] = live.map((c) => {
     const id = c.campaign_id;
     const spend = spendAsOf(s, id);
+    const betSpend = betCost.get(id) ?? 0;
+    const cost = spend + betSpend;
     const identified = s.identifiedExternal.filter((pid) => p.personById.get(pid)?.first_campaign_id === id).length;
     let registered = 0,
       conf = 0,
@@ -346,15 +375,17 @@ export function campaignTable(data: Dataset, asOf: string) {
       app_status: pl?.app_status ?? "active",
       budget_inr: pl?.budget_inr ?? null,
       spend,
+      betSpend,
+      cost,
       identified,
       registered,
       confirmed: conf,
       attended,
       showUpPct: attended != null && registered ? r1((attended / registered) * 100) : null,
-      inrPerRegistration: registered ? Math.round(spend / registered) : null,
-      inrPerConfirmed: conf ? Math.round(spend / conf) : null,
-      inrPerAttendee: attended ? Math.round(spend / attended) : null,
-      shareOfSpendPct: totalSpend ? r1((spend / totalSpend) * 100) : null,
+      inrPerRegistration: registered ? Math.round(cost / registered) : null,
+      inrPerConfirmed: conf ? Math.round(cost / conf) : null,
+      inrPerAttendee: attended ? Math.round(cost / attended) : null,
+      shareOfSpendPct: totalCost ? r1((cost / totalCost) * 100) : null,
       shareOfAttendeesPct: null,
       engagedSharePct: registered ? r1((engaged / registered) * 100) : null,
       budgetUsedPct: pl?.budget_inr ? r1((spend / pl.budget_inr) * 100) : null,
@@ -368,6 +399,10 @@ export function campaignTable(data: Dataset, asOf: string) {
   const caveats = baseCaveats(s);
   if (hidden) caveats.push(`${hidden} campaign(s) created after this as-of date are hidden.`);
   caveats.push("Campaign costs come from net ledger spend only (no staff time or sponsor in-kind). Spend does not prove incremental attendance.");
+  if (totalBetSpend)
+    caveats.push(
+      `Cost per person for ${[...betCost].filter(([, v]) => v).map(([k]) => k).join(" and ")} includes its bet's operating spend (${Object.entries(BET_CAMPAIGN).map(([b, c]) => `${b} to ${c}`).join(", ")}), and the blended figures include that money too. Spend columns and budgets are marketing spend only. Other bets' spend acts on every campaign and stays in the bet tracker.`,
+    );
   const orphanSpend = p.daily.filter((d) => d.ms <= s.asOfMs && !p.campaignById.has(d.campaign_id)).length;
   if (orphanSpend) caveats.push(`${orphanSpend} daily marketing row(s) reference a campaign_id that is not in Campaigns; their spend is in totals only.`);
   return {
@@ -377,14 +412,16 @@ export function campaignTable(data: Dataset, asOf: string) {
       rows,
       totals: {
         spend: totalSpend,
+        betSpend: totalBetSpend,
+        cost: totalCost,
         registered: totalRegistered,
         attended: s.phase === "pre-event" ? null : attributedAttendees,
-        blendedInrPerAttendee: s.phase === "pre-event" || !attributedAttendees ? null : Math.round(totalSpend / attributedAttendees),
+        blendedInrPerAttendee: s.phase === "pre-event" || !attributedAttendees ? null : Math.round(totalCost / attributedAttendees),
         blendedInrPerConfirmed: (() => {
           const c = rows.reduce((a, r) => a + r.confirmed, 0);
-          return c ? Math.round(totalSpend / c) : null;
+          return c ? Math.round(totalCost / c) : null;
         })(),
-        blendedInrPerRegistration: totalRegistered ? Math.round(totalSpend / totalRegistered) : null,
+        blendedInrPerRegistration: totalRegistered ? Math.round(totalCost / totalRegistered) : null,
       },
       unattributed: {
         walkIns: s.phase === "pre-event" ? 0 : s.walkIns.size,
@@ -524,7 +561,7 @@ export function flags(data: Dataset, asOf: string) {
       reason = `Only ${sample} ${post ? "registrations" : "confirmed"}; below the minimum sample of ${st.min_sample}, too little data to judge.`;
     } else if (costRatio == null) {
       reason = post ? "No attributed attendees, so cost per attendee is undefined." : "No confirmed registrants yet.";
-      level = post && c.spend > 0 ? "stop" : "watch";
+      level = post && c.cost > 0 ? "stop" : "watch";
     } else if (post) {
       const su = (c.showUpPct ?? 0) / 100;
       if (costRatio >= st.stop_cost_ratio || su < st.stop_max_showup) {
@@ -548,6 +585,7 @@ export function flags(data: Dataset, asOf: string) {
         reason = `${inr(unit)} per confirmed (${costRatio.toFixed(2)}x blended ${inr(blended)}); engaged share ${eng}%. Between thresholds.`;
       }
     }
+    if (c.betSpend && costRatio != null) reason += ` Cost = ${inr(c.spend)} marketing + ${inr(c.betSpend)} bet operating spend.`;
     return {
       campaign_id: c.campaign_id,
       campaign_name: c.campaign_name,
@@ -556,6 +594,7 @@ export function flags(data: Dataset, asOf: string) {
       rule: post ? "post-event: INR per actual attendee vs blended + show-up" : "pre-event proxy: INR per confirmed vs blended",
       metrics: {
         spend: c.spend,
+        betSpend: c.betSpend,
         registered: c.registered,
         confirmed: c.confirmed,
         attended: c.attended,

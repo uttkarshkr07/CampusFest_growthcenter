@@ -128,7 +128,7 @@ export function ChannelQuadrant({ table, flagsRes, burn, className }: { table: T
       const x = post ? r.inrPerAttendee : r.inrPerConfirmed;
       const y = post ? r.showUpPct : r.registered ? (r.confirmed / r.registered) * 100 : null;
       const f = level.get(r.campaign_id);
-      return x != null && y != null && r.spend > 0 ? { id: r.campaign_id, name: r.campaign_name, short: r.campaign_name.split(" ")[0], x, y: Math.round(y * 10) / 10, z: r.spend, level: f?.level ?? "watch", reason: f?.reason ?? "" } : null;
+      return x != null && y != null && r.cost > 0 ? { id: r.campaign_id, name: r.campaign_name, short: r.campaign_name.split(" ")[0], x, y: Math.round(y * 10) / 10, z: r.cost, level: f?.level ?? "watch", reason: f?.reason ?? "" } : null;
     })
     .filter((d): d is Dot => d != null);
   const series: { level: Dot["level"]; name: string; color: string; shape: "circle" | "diamond" | "triangle" }[] = [

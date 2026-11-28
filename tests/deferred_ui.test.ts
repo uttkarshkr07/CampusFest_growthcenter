@@ -71,3 +71,43 @@ describe("task filter by team", () => {
     expect(E.tasksView(data, POST, {}).value.rows.length).toBe(3);
   });
 });
+
+describe("bet operating spend counts as its campaign's cost", () => {
+  const d = loadSeed();
+  const c08 = { ...d.campaigns[0], campaign_id: "C08", campaign_name: "College Contingents", created_at: "2025-01-15T09:00:00+05:30" };
+  const spend = (spend_id: string, bet_id: string, spent_on: string, amount_inr: number, extra = {}) => ({ spend_id, bet_id, spent_on, amount_inr, item: "x", ...extra });
+  const bets = {
+    bet_spend: [
+      spend("S1", "B1", "2025-02-01", 1000),
+      spend("S2", "B1", "2025-04-30", 500), // after as-of
+      spend("S3", "B2", "2025-02-01", 9000), // not tied to one campaign
+      spend("S4", "B1", "2025-02-02", 200),
+      spend("S4", "B1", "2025-02-02", 300), // same id: last row wins
+      spend("S5", "B1", "2025-02-03", 700, { _deleted: true }),
+    ],
+  };
+  const data = { ...d, campaigns: [...d.campaigns, c08], bets: bets as unknown as NonNullable<typeof d.bets> };
+
+  it("sums only the mapped bet, up to as-of, deduped, not deleted", () => {
+    expect(E.betSpendAsOf(data, Date.parse("2025-04-20T23:59:59+05:30"), "C08")).toBe(1300);
+    expect(E.betSpendAsOf(data, Date.parse("2025-04-20T23:59:59+05:30"), "C04")).toBe(0);
+  });
+
+  it("cost and blended figures include it; marketing spend does not", () => {
+    const base = E.campaignTable(d, POST).value;
+    const t = E.campaignTable(data, POST).value;
+    const row = t.rows.find((r) => r.campaign_id === "C08")!;
+    expect(row.spend).toBe(0);
+    expect(row.betSpend).toBe(1300);
+    expect(row.cost).toBe(1300);
+    expect(t.totals.spend).toBe(base.totals.spend);
+    expect(t.totals.cost).toBe(base.totals.spend + 1300);
+    expect(t.totals.blendedInrPerAttendee).toBe(Math.round((base.totals.spend + 1300) / t.totals.attended!));
+  });
+
+  it("the original data has no bet spend, so nothing moves", () => {
+    const t = E.campaignTable(d, POST).value;
+    expect(t.totals.betSpend).toBe(0);
+    expect(t.rows.find((r) => r.campaign_id === "C04")!.inrPerAttendee).toBe(81);
+  });
+});

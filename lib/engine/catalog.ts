@@ -31,7 +31,7 @@ export const catalog = {
     run: (d: Dataset, a: { asOf: string }) => M.targetsVsActuals(d, a.asOf),
   },
   campaignTable: {
-    description: "Per-campaign KPIs: spend, identified, registered, confirmed, attended, show-up %, INR per registration / confirmed / actual attendee, share of spend vs attendees, engaged share, plan budget and status.",
+    description: "Per-campaign KPIs: marketing spend, bet operating spend for a campaign tied to one bet (betSpend; every INR-per-person figure and the blended figures use marketing + betSpend), identified, registered, confirmed, attended, show-up %, INR per registration / confirmed / actual attendee, share of spend vs attendees, engaged share, plan budget and status.",
     input: z.object({ asOf }),
     run: (d: Dataset, a: { asOf: string }) => M.campaignTable(d, a.asOf),
   },

@@ -466,7 +466,7 @@ Dates are in 2025. All thresholds, dates and minimum samples are [A]. KPI codes 
 |---|---|---|
 | K01 actual attendees | Scored against 10,521 and 12,844 after the fest | none |
 | K20 projected attendees | Weekly, against 10,521. Per route: locked-in x show-up, plus unlocked and unpaid people discounted by the plan rates (zero after 2 Apr), plus gate rate and hackathon, capped at 13,000. It projects current sign-ups only | none |
-| K21 media INR per confirmed registrant (per actual attendee after the fest) vs blended | Scale <= 0.8x with show-up >= 75%; Stop >= 1.5x or show-up < 55% | 30 |
+| K21 INR per confirmed registrant (per actual attendee after the fest) vs blended; cost = marketing spend plus any bet operating spend tied to that campaign | Scale <= 0.8x with show-up >= 75%; Stop >= 1.5x or show-up < 55% | 30 |
 | K22 revenue givebacks / gross pass payments | Scale <= 10%; Stop > 15% (review discounts) | 200 paid passes |
 | K23 bet spend vs budget, and spend per **modelled** increment | Flag over budget; incrementality is not observed. In the product it is the spend line on each bet card, with the total against INR 10,00,000 | none |
 
@@ -530,7 +530,7 @@ The menu is grouped **Run, Grow, Fest, Partners, System**. Every figure on every
 - **Sign-in** with one button per demo account (Reviewer and six team members) and role-based editing (table below).
 - **Light and dark mode.**
 - **Deep links:** "Take me there" buttons and links open the exact campaign, task, ticket, record, venue, event, bet, college, data-quality list or event rules.
-- **Mayu,** the fest peacock, fronts the copilot: the large "Ask Mayu" button at the bottom right (dark in light mode, white in dark mode), the avatar and a greeting with one of three poses. The persona is a name, a picture and a greeting only; it never changes the rules, evidence or advice.
+- **Mayu,** the fest peacock, fronts the copilot: a large Mayu next to the "Ask Mayu" button at the bottom right (the button is dark in light mode, white in dark mode), the avatar and a greeting with one of three poses. The persona is a name, a picture and a greeting only; it never changes the rules, evidence or advice.
 
 **Run**
 - **Overview (mission control):**
@@ -543,7 +543,7 @@ The menu is grouped **Run, Grow, Fest, Partners, System**. Every figure on every
 - **Tickets:** requests between publicity, sponsorship and events. Open, then accepted or declined (with an optional reason), in progress and done. Each ticket has its dated history, comments and linked tasks, and a count of tickets awaiting your team. Each ticket is shown as it stood on the selected date. Generated tickets on the simulated run carry a small SIMULATED tag; the full note is inside the ticket.
 
 **Grow**
-- **Campaigns:** per-campaign spend, identified, registered, confirmed, attended, show-up, INR per registration, per confirmed and per actual attendee, share of spend against share of attendees, and Scale / Watch / Stop flags with their reason. "+ Task" from any flag. Each campaign opens its own page: a daily chart of spend, clicks, landing sessions and registration starts, the campaign's funnel (identified by first campaign, later stages by registration campaign; walk-ins have no campaign), its tasks, the people who registered through it and any sponsor link (an association, not proof of added attendees).
+- **Campaigns:** per-campaign spend, identified, registered, confirmed, attended, show-up, INR per registration, per confirmed and per actual attendee, share of spend against share of attendees, and Scale / Watch / Stop flags with their reason. "+ Task" from any flag. On the simulated run, College Contingents (C08) and the hackathon page (C10) also carry their bet's operating spend (B1 and B5), since that money buys their sign-ups; the blended figures include it too, so the comparison stays fair. Marketing spend and budgets stay separate. The other bets act on every campaign, so their spend stays on the bet tracker. Each campaign opens its own page: a daily chart of spend, clicks, landing sessions and registration starts, the campaign's funnel (identified by first campaign, later stages by registration campaign; walk-ins have no campaign), its tasks, the people who registered through it and any sponsor link (an association, not proof of added attendees).
 - **Bet tracker:** one card per bet with its KPIs (K01 to K22), verdict, the numbers behind it, minimum sample, spend against budget and a "+ Task" button that records the rule, numbers and date. Thresholds are edited on the cards themselves (simulated run only, logged, restored by Reset), not on the Settings page. On the original data only K01, K20 and K21 can be read, plus proxies for K05 and K14. A Championship tab shows the board.
 - **Actions:** the people behind each leak (confirmed but not engaged, interested but not confirmed, waitlisted, failed a gate scan and never admitted), with full lists.
 - **What-if:** budget moves between campaigns, cuts to the whole budget and show-up changes, with a cautious-to-optimistic range and its assumptions. Before the fest only unspent budget moves.

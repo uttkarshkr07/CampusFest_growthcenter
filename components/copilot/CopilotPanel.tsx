@@ -37,11 +37,11 @@ export default function CopilotPanel() {
   if (!ready || path.startsWith("/copilot")) return null;
   if (!open)
     return (
-      // the pill is dark in light mode and white in dark mode (ink tokens flip); Mayu sits in her own white
-      // circle in both themes so her navy outline never lands on a dark fill
+      // the pill is dark in light mode and white in dark mode (ink tokens flip). Mayu stands on her own with a
+      // transparent background; the artwork has about 8% empty margin, so 90px draws her about 76px wide
       <button onClick={() => setOpen(true)} className="group fixed bottom-5 right-5 z-40 flex items-center" aria-label={`Open ${MASCOT.name}`}>
-        <span className="relative z-10 -mr-5 flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-full bg-white shadow-lg ring-2 ring-brand transition-transform group-hover:scale-105">
-          <MascotFace size={70} />
+        <span className="relative z-10 -mr-4 flex items-center justify-center drop-shadow-md transition-transform group-hover:scale-105">
+          <MascotFace size={90} />
         </span>
         <span className="rounded-full bg-ink py-2.5 pl-8 pr-5 text-[15px] font-semibold text-on-accent shadow-lg group-hover:opacity-90">Ask {MASCOT.name}</span>
       </button>

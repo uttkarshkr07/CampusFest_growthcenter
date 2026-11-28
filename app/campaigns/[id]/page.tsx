@@ -85,7 +85,11 @@ export default function CampaignPage() {
       />
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-        <Kpi label="Spend (net)" value={inr(row.spend)} hint={row.budget_inr != null ? `of ${inr(row.budget_inr)} budget${row.budgetUsedPct != null ? `, ${pct(row.budgetUsedPct)}` : ""}` : "no budget set"} />
+        {row.betSpend ? (
+          <Kpi label="Cost (marketing + bet ops)" value={inr(row.cost)} hint={`${inr(row.spend)} marketing + ${inr(row.betSpend)} bet operating spend`} />
+        ) : (
+          <Kpi label="Spend (net)" value={inr(row.spend)} hint={row.budget_inr != null ? `of ${inr(row.budget_inr)} budget${row.budgetUsedPct != null ? `, ${pct(row.budgetUsedPct)}` : ""}` : "no budget set"} />
+        )}
         <Kpi label="Identified (first campaign)" value={num(row.identified)} />
         <Kpi label="Registered" value={num(row.registered)} />
         <Kpi label="Confirmed" value={num(row.confirmed)} />

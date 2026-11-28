@@ -53,8 +53,8 @@ export function buildSummary(data: Dataset, asOf: string) {
       registrationStatusAtSnapshot: f.value.statusAtSnapshot,
     },
     campaigns: {
-      columns: ["id", "name", "planStatus", "spend", "registered", "confirmed", "attended", "showUpPct", "inrPerRegistration", "inrPerConfirmed", "inrPerAttendee", "engagedSharePct"],
-      rows: c.value.rows.map((r) => [r.campaign_id, r.campaign_name, r.app_status, r.spend, r.registered, r.confirmed, r.attended, r.showUpPct, r.inrPerRegistration, r.inrPerConfirmed, r.inrPerAttendee, r.engagedSharePct]),
+      columns: ["id", "name", "planStatus", "spend", "betSpend", "registered", "confirmed", "attended", "showUpPct", "inrPerRegistration", "inrPerConfirmed", "inrPerAttendee", "engagedSharePct"],
+      rows: c.value.rows.map((r) => [r.campaign_id, r.campaign_name, r.app_status, r.spend, r.betSpend, r.registered, r.confirmed, r.attended, r.showUpPct, r.inrPerRegistration, r.inrPerConfirmed, r.inrPerAttendee, r.engagedSharePct]),
       totals: c.value.totals,
       unattributed: c.value.unattributed,
     },

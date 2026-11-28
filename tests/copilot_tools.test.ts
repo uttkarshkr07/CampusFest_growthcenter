@@ -172,7 +172,7 @@ describe("strict hindsight", () => {
     expect(s.funnel.actualAttendees).toBeNull();
     expect(s.registrationPace).not.toBeNull();
     expect(s.dataAvailable.checkins.rows).toBe(0);
-    expect(s.campaigns.rows.every((r) => r[6] === null && r[7] === null && r[10] === null)).toBe(true);
+    expect(s.campaigns.rows.every((r) => r[7] === null && r[8] === null && r[11] === null)).toBe(true);
     expect(JSON.stringify(s)).not.toMatch(/2025 data|from 2025-04-20/);
   });
 });
