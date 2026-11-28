@@ -60,7 +60,15 @@ export function rankAttention(items: AttentionItem[]): AttentionItem[] {
 /** items for these teams, plus items that belong to everyone */
 export const forTeams = (items: AttentionItem[], teams: readonly string[]) => items.filter((i) => i.team == null || teams.includes(i.team));
 
-export function attention(data: Dataset, asOf: string): Result<{ asOf: string; items: AttentionItem[]; counts: Record<Severity, number> }> {
+/** one row per detector: did it run on this dataset, and did it find anything */
+export interface AttentionCheck {
+  label: string;
+  kinds: AttentionItem["kind"][];
+  ran: boolean;
+  found: number;
+}
+
+export function attention(data: Dataset, asOf: string): Result<{ asOf: string; items: AttentionItem[]; counts: Record<Severity, number>; checks: AttentionCheck[] }> {
   const s = snapshot(data, asOf);
   const p = s.p;
   const owner = (cid: string | null | undefined) => (cid ? (p.campaignById.get(cid)?.owner_id ?? null) : null);
@@ -355,7 +363,23 @@ export function attention(data: Dataset, asOf: string): Result<{ asOf: string; i
   const counts = { act: 0, watch: 0, opportunity: 0 } as Record<Severity, number>;
   for (const i of ranked) counts[i.severity]++;
   return {
-    value: { asOf: s.label, items: ranked, counts },
+    value: {
+      asOf: s.label,
+      items: ranked,
+      counts,
+      checks: (
+        [
+          ["Campaign scale and stop rules", ["flag"], true],
+          ["Sign-up spikes and stops", ["spike", "flatline"], true],
+          ["Unusual spend rows", ["spend"], true],
+          ["Session capacity", ["capacity"], prog.hasBookings],
+          ["Bet KPIs", ["bet"], tr.hasBetData],
+          ["Tickets and tasks", ["ticket", "tasks"], true],
+          ["People to win back", ["recover"], true],
+          ["Data quality", ["quality"], true],
+        ] as [string, AttentionItem["kind"][], boolean][]
+      ).map(([label, kinds, ran]) => ({ label, kinds, ran, found: ranked.filter((i) => kinds.includes(i.kind)).length })),
+    },
     basis: [
       `Spike = a campaign day with at least ${SPIKE_RULE.minCount} registrations, ${SPIKE_RULE.multiple}x the median of its previous ${SPIKE_RULE.window} days and a robust z-score of ${SPIKE_RULE.minZ} or more, when the campaign had sign-ups on at least ${SPIKE_RULE.minActiveDays} of those days.`,
       "Spike follow-up (7+ days later): flagged Act when those people confirm at under half the rate of the campaign's other sign-ups, or cancel 30+ points more often.",

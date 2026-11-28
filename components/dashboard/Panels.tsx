@@ -41,13 +41,13 @@ export function Briefing({ lines, phase, daysToEvent, targetVersion, issues, sim
 
 // ---------------------------------------------------------------------------
 type Leak = ReturnType<typeof leakFunnel>;
-export function LeakFunnel({ leak }: { leak: Leak }) {
+export function LeakFunnel({ leak, className }: { leak: Leak; className?: string }) {
   const v = leak.value;
   const top = Math.max(1, v.stages[0]?.count ?? 1);
   const judged = v.phase === "live" ? v.steps.slice(0, -1) : v.steps;
   const worst = judged.reduce<(typeof v.steps)[number] | null>((a, b) => (!a || b.lost > a.lost ? b : a), null);
   return (
-    <Section title="Where are we losing people?" badge={<Badge kind="sourced">FROM RECORDS</Badge>}>
+    <Section className={className} title="Where are we losing people?" badge={<Badge kind="sourced">FROM RECORDS</Badge>}>
       <div className="space-y-1">
         {v.stages.map((s, i) => {
           const step = i > 0 ? v.steps[i - 1] : null;
@@ -116,7 +116,7 @@ interface Dot {
   reason: string;
 }
 
-export function ChannelQuadrant({ table, flagsRes, burn }: { table: Table; flagsRes: Flags; burn: Burn }) {
+export function ChannelQuadrant({ table, flagsRes, burn, className }: { table: Table; flagsRes: Flags; burn: Burn; className?: string }) {
   const c = useChartColors();
   const router = useRouter();
   const post = table.value.phase === "post-event";
@@ -144,7 +144,7 @@ export function ChannelQuadrant({ table, flagsRes, burn }: { table: Table; flags
   for (const d of dots) if (d.x > xTop * 0.8) d.short = `<${d.short}`;
   const sorted = [...dots].sort((a, b) => a.x - b.x);
   return (
-    <Section title="Which channels do we back?" badge={<Badge kind={post ? "sourced" : "assumption"}>{post ? "AFTER THE FEST" : "PROXY BEFORE THE FEST"}</Badge>}>
+    <Section className={className} title="Which channels do we back?" badge={<Badge kind={post ? "sourced" : "assumption"}>{post ? "AFTER THE FEST" : "PROXY BEFORE THE FEST"}</Badge>}>
       {dots.length === 0 ? (
         <p className="text-[13px] text-muted">No campaign has spend and people yet at this date.</p>
       ) : (
@@ -234,7 +234,7 @@ export function ChannelQuadrant({ table, flagsRes, burn }: { table: Table; flags
           </div>
         )}
       </div>
-      <Caveats items={[...flagsRes.caveats, ...burn.caveats]} basis={[...flagsRes.basis, ...burn.basis]} />
+      <Caveats items={[...new Set([...flagsRes.caveats, ...burn.caveats])]} basis={[...new Set([...flagsRes.basis, ...burn.basis])]} />
     </Section>
   );
 }
@@ -258,14 +258,16 @@ function PointLabel({ x = 0, y = 0, value, fill }: LabelProps & { fill: string }
 
 // ---------------------------------------------------------------------------
 type Mom = ReturnType<typeof momentum>;
-export function WhatChanged({ mom7, mom14 }: { mom7: Mom; mom14: Mom }) {
+export function WhatChanged({ mom7, mom14, className }: { mom7: Mom; mom14: Mom; className?: string }) {
   const [w, setW] = useState<7 | 14>(7);
   const m = (w === 7 ? mom7 : mom14).value;
   const delta = m.total - m.totalPrev;
-  const movers = m.rows.filter((r) => r.delta !== 0).slice(0, 4);
+  const movers = m.rows.filter((r) => r.delta !== 0);
   const edits = [...m.recentEdits].reverse().slice(0, 4);
   return (
     <Section
+      className={`flex flex-col ${className ?? ""}`}
+      bodyClassName="flex min-h-0 flex-1 flex-col"
       title="What changed?"
       badge={
         <div className="flex overflow-hidden rounded-md border border-line text-[12px]" role="group" aria-label="Window">
@@ -285,7 +287,10 @@ export function WhatChanged({ mom7, mom14 }: { mom7: Mom; mom14: Mom }) {
           {num(delta)} vs the {w} before{m.totalPrev ? ` (${delta >= 0 ? "+" : ""}${pct((delta / m.totalPrev) * 100, 0)})` : ""}
         </span>
       </div>
-      <ul className="mt-2 divide-y divide-line/70 text-[12px]">
+      <div className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+        Campaigns that moved ({movers.length})
+      </div>
+      <ul className="min-h-0 flex-1 divide-y divide-line/70 overflow-y-auto text-[12px]">
         {movers.length === 0 && <li className="py-1.5 text-muted">No campaign moved.</li>}
         {movers.map((r) => (
           <li key={r.campaign_id} className="flex items-center gap-2 py-1.5">
@@ -331,9 +336,9 @@ const CHIP: Record<Verdict, string> = {
   tracking: "bg-brand-soft text-brand border-brand/30",
 };
 
-export function BetsStrip({ tracker }: { tracker: TrackerValue | null }) {
+export function BetsStrip({ tracker, className }: { tracker: TrackerValue | null; className?: string }) {
   return (
-    <Section title="Bets" badge={tracker?.hasBetData ? <Badge kind="assumption">SIMULATED RUN</Badge> : undefined}>
+    <Section className={className} title="Bets" badge={tracker?.hasBetData ? <Badge kind="assumption">SIMULATED RUN</Badge> : undefined}>
       {!tracker?.hasBetData ? (
         <p className="text-[13px] text-muted">
           The five bets are tracked on the simulated run: the original 2025 data has no squads, passes or contingents. <Link href="/bets" className="font-medium text-brand">Open the bet tracker</Link>
@@ -367,7 +372,7 @@ export function BetsStrip({ tracker }: { tracker: TrackerValue | null }) {
   );
 }
 
-export function ExecutionPulse({ byStatus, overdue, awaitingByTeam, ticketsOverdue }: { byStatus: Record<string, number>; overdue: number; awaitingByTeam: Record<string, number>; ticketsOverdue: number }) {
+export function ExecutionPulse({ byStatus, overdue, awaitingByTeam, ticketsOverdue, className }: { byStatus: Record<string, number>; overdue: number; awaitingByTeam: Record<string, number>; ticketsOverdue: number; className?: string }) {
   const cell = (label: string, value: number, bad?: boolean, href?: string) => (
     <Link href={href ?? "/tasks"} className="rounded-lg bg-subtle px-2.5 py-1.5 hover:bg-subtle-2">
       <div className="text-[11px] text-muted">{label}</div>
@@ -375,7 +380,7 @@ export function ExecutionPulse({ byStatus, overdue, awaitingByTeam, ticketsOverd
     </Link>
   );
   return (
-    <Section title="Execution">
+    <Section className={className} title="Execution">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Tasks</div>
       <div className="mt-1 grid grid-cols-5 gap-1.5">
         {cell("To do", byStatus.todo ?? 0)}

@@ -143,4 +143,15 @@ describe("attention feed", () => {
     for (const day of DATES.concat(["2025-04-12", "2025-04-20"]))
       for (const i of E.attention(d, day).value.items) if (i.link) expect(hrefFor(i.link.target, i.link.id), `${i.id}`).not.toBeNull();
   });
+
+  it("lists every check, counts what each found, and says which ones had no data", () => {
+    const d = loadSeed();
+    const v = E.attention(d, "2025-03-15").value;
+    expect(v.checks).toHaveLength(8);
+    const covered = new Set(v.checks.flatMap((c) => c.kinds));
+    for (const i of v.items) expect(covered.has(i.kind), i.kind).toBe(true);
+    expect(v.checks.reduce((a, c) => a + c.found, 0)).toBe(v.items.length);
+    for (const c of v.checks) if (!c.ran) expect(c.found).toBe(0);
+    expect(v.checks.find((c) => c.kinds.includes("bet"))!.ran).toBe(!!d.bets && E.trackerFor(d, "2025-03-15").value.hasBetData);
+  });
 });

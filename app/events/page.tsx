@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, CalendarClock, Clock, MapPin, Search, Trophy, Users } from "lucide-react";
+import { BookOpen, CalendarClock, CalendarDays, ChevronDown, Clock, MapPin, Search, Trophy, Users } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { eventList, RULEBOOK, type FestEvent } from "@/lib/engine";
 import { Badge, Caveats, Empty, PageHeader } from "@/components/ui";
 import { QueryParams } from "@/components/deeplink";
+import FullSchedule from "@/components/FullSchedule";
 import { fmtDate, num, shortDay } from "@/lib/format";
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -19,6 +20,7 @@ export default function EventsPage() {
   const [scoredOnly, setScoredOnly] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   useEffect(() => {
     if (focus && res?.value.events.some((e) => e.id === focus)) setSelected(focus);
@@ -53,7 +55,23 @@ export default function EventsPage() {
         <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={scoredOnly} onChange={(e) => setScoredOnly(e.target.checked)} /> Championship events only
         </label>
+        <button onClick={() => setShowSchedule(!showSchedule)} aria-expanded={showSchedule} className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-medium ${showSchedule ? "border-brand bg-brand-soft text-brand" : "border-line bg-panel hover:bg-subtle"}`}>
+          <CalendarDays className="h-3.5 w-3.5" /> Full schedule <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showSchedule ? "rotate-180" : ""}`} />
+        </button>
       </div>
+
+      {showSchedule && (
+        <FullSchedule
+          events={v.events}
+          days={day ? [day] : days}
+          isMatch={(e) => match(e)}
+          selected={selected}
+          onPick={(id) => {
+            setSelected(id);
+            requestAnimationFrame(() => document.getElementById("event-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+        />
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(280px,360px)_1fr]">
         <nav className="space-y-3" aria-label="Events by genre">
@@ -69,7 +87,6 @@ export default function EventsPage() {
                     <button onClick={() => setSelected(e.id)} aria-pressed={selected === e.id} className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] ${selected === e.id ? "bg-brand-soft font-semibold text-brand" : "hover:bg-subtle"}`}>
                       <span className="min-w-0 flex-1 truncate">{e.name}</span>
                       {e.points != null && <span className="tabular rounded bg-subtle-2 px-1.5 text-[11px] text-ink-2">{e.points} pts</span>}
-                      {!e.rules && e.genre !== "Shows and Pronites" && e.genre !== "Guest lectures" && e.genre !== "Workshops" && <span className="text-[10px] text-muted">no rules</span>}
                     </button>
                   </li>
                 ))}
@@ -78,7 +95,7 @@ export default function EventsPage() {
           ))}
         </nav>
 
-        <div className="space-y-4">
+        <div id="event-detail" className="scroll-mt-4 space-y-4">
           {current ? <EventDetail e={current} hasBookings={v.hasBookings} /> : <GeneralRules />}
           {current && <GeneralRules compact />}
           <Caveats items={res.caveats} basis={res.basis} />

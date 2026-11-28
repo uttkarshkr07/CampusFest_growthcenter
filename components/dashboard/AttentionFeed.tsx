@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertOctagon, ArrowRight, Eye, ListPlus, MessageSquare, Sparkles } from "lucide-react";
-import { forTeams, type AttentionItem, type Severity } from "@/lib/engine";
+import { AlertOctagon, ArrowRight, CheckCircle2, Eye, ListPlus, MessageSquare, Sparkles } from "lucide-react";
+import { forTeams, type AttentionCheck, type AttentionItem, type Severity } from "@/lib/engine";
 import { hrefFor } from "@/lib/copilot/targets";
 import { useChat } from "@/lib/copilot/store";
 import { blankTask, type TaskDraft } from "@/components/TaskDialog";
@@ -31,30 +31,32 @@ export function taskFromItem(i: AttentionItem, asOf: string): TaskDraft {
 
 export default function AttentionFeed({
   items,
+  checks,
   basis,
   caveats,
   myTeams,
   onTask,
+  className = "",
 }: {
   items: AttentionItem[];
+  checks: AttentionCheck[];
   basis: string[];
   caveats: string[];
   /** null = Reviewer or sign-in off: everything is theirs */
   myTeams: string[] | null;
   onTask: (i: AttentionItem) => void;
+  className?: string;
 }) {
   const [scope, setScope] = useState<"you" | "all">(myTeams ? "you" : "all");
   const [sev, setSev] = useState<Severity | "">("");
-  const [showAll, setShowAll] = useState(false);
   const prefill = useChat((s) => s.prefill);
   const scoped = useMemo(() => (scope === "you" && myTeams ? forTeams(items, myTeams) : items), [items, scope, myTeams]);
   const counts = { act: 0, watch: 0, opportunity: 0 } as Record<Severity, number>;
   for (const i of scoped) counts[i.severity]++;
   const shown = scoped.filter((i) => !sev || i.severity === sev);
-  const visible = showAll ? shown : shown.slice(0, 7);
 
   return (
-    <section className="flex h-full flex-col rounded-xl border border-line bg-panel">
+    <section className={`flex flex-col rounded-xl border border-line bg-panel ${className}`}>
       <header className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
         <h2 className="mr-auto text-[13px] font-semibold">What needs attention</h2>
         {myTeams && (
@@ -77,9 +79,9 @@ export default function AttentionFeed({
           );
         })}
       </div>
-      <ol className="flex-1 divide-y divide-line overflow-y-auto" style={{ maxHeight: 560 }}>
-        {visible.length === 0 && <li className="px-4 py-6 text-center text-[13px] text-muted">Nothing here at this date{scope === "you" ? " for your team. Switch to All to see the rest." : "."}</li>}
-        {visible.map((i) => {
+      <ol className="max-h-[560px] min-h-0 flex-1 divide-y divide-line overflow-y-auto xl:max-h-none">
+        {shown.length === 0 && <li className="px-4 py-6 text-center text-[13px] text-muted">Nothing here at this date{scope === "you" ? " for your team. Switch to All to see the rest." : "."}</li>}
+        {shown.map((i) => {
           const S = SEV[i.severity];
           const Icon = S.icon;
           const href = i.link ? hrefFor(i.link.target, i.link.id) : null;
@@ -116,13 +118,23 @@ export default function AttentionFeed({
             </li>
           );
         })}
+        {checks.some((c) => c.ran && !c.found) && (
+          <li className="px-4 py-3 text-[12px] text-muted">
+            <div className="mb-1.5 font-medium">Also checked at this date, nothing found:</div>
+            <ul className="flex flex-wrap gap-1.5">
+              {checks
+                .filter((c) => c.ran && !c.found)
+                .map((c) => (
+                  <li key={c.label} className="inline-flex items-center gap-1 rounded-full bg-subtle px-2 py-0.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-good" aria-hidden /> {c.label}
+                  </li>
+                ))}
+            </ul>
+            {checks.some((c) => !c.ran) && <p className="mt-1.5">Not checked on this dataset: {checks.filter((c) => !c.ran).map((c) => c.label.toLowerCase()).join(", ")} (no data for it).</p>}
+          </li>
+        )}
       </ol>
       <footer className="border-t border-line px-4 py-2">
-        {shown.length > 7 && (
-          <button onClick={() => setShowAll(!showAll)} className="text-[12px] font-medium text-brand">
-            {showAll ? "Show fewer" : `Show all ${shown.length}`}
-          </button>
-        )}
         <Caveats items={caveats} basis={basis} />
       </footer>
     </section>

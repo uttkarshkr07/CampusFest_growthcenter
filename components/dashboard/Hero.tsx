@@ -12,14 +12,14 @@ type LF = ReturnType<typeof landingForecast>;
 type Gate = ReturnType<typeof liveGate>;
 type Hist = ReturnType<typeof forecastHistory>;
 
-function Section({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, badge, children, className = "", bodyClassName = "" }: { title: string; badge?: React.ReactNode; children: React.ReactNode; className?: string; bodyClassName?: string }) {
   return (
-    <section className="@container rounded-xl border border-line bg-panel">
+    <section className={`@container rounded-xl border border-line bg-panel ${className}`}>
       <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-2.5">
         <h2 className="text-[13px] font-semibold">{title}</h2>
         {badge}
       </header>
-      <div className="p-4">{children}</div>
+      <div className={`p-4 ${bodyClassName}`}>{children}</div>
     </section>
   );
 }
