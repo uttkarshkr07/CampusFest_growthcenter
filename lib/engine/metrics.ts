@@ -185,20 +185,39 @@ export interface FunnelStage {
   definition: string;
 }
 
-export function funnel(data: Dataset, asOf: string) {
+/**
+ * The registration funnel. With `campaignId`, identified people are those whose first campaign it is and the
+ * later stages are people whose registration it is (the same split as campaignTable); walk-ins are left out.
+ */
+export function funnel(data: Dataset, asOf: string, opts: { campaignId?: string } = {}) {
   const s = snapshot(data, asOf);
   const p = s.p;
-  const identified = s.identifiedExternal.length;
-  const identifiedSet = new Set(s.identifiedExternal);
+  const cid = opts.campaignId;
+  const identifiedList = cid ? s.identifiedExternal.filter((pid) => p.personById.get(pid)?.first_campaign_id === cid) : s.identifiedExternal;
+  const regPids = cid ? [...s.personReg].filter(([, r]) => r.campaign_id === cid).map(([pid]) => pid) : [...s.personReg.keys()];
+  const regSet = new Set(regPids);
+  const identified = identifiedList.length;
+  const identifiedSet = new Set(identifiedList);
   const started = new Set<string>();
   for (const i of p.interactions)
     if (i.ms <= s.asOfMs && i.event_type === "registration_start" && identifiedSet.has(i.person_id)) started.add(i.person_id);
-  for (const pid of s.personReg.keys()) started.add(pid);
-  const { counts, confirmed } = externalStatusCounts(s);
+  for (const pid of regPids) started.add(pid);
+  const all = externalStatusCounts(s);
+  let { counts, confirmed } = all;
+  if (cid) {
+    counts = { interested: 0, confirmed: 0, cancelled: 0, waitlisted: 0, no_status: 0 };
+    confirmed = new Set<string>();
+    for (const pid of regPids) {
+      const st = s.statusOf(s.personReg.get(pid)!.registration_id, s.statusMs)?.status ?? "no_status";
+      counts[st] = (counts[st] ?? 0) + 1;
+      if (st === "confirmed") confirmed.add(pid);
+    }
+  }
+  const regAttendees = cid ? [...s.registeredAttendees].filter((pid) => regSet.has(pid)).length : s.registeredAttendees.size;
   const stages: FunnelStage[] = [
-    { key: "identified", label: "Identified", count: identified, definition: DEF.identified },
+    { key: "identified", label: "Identified", count: identified, definition: cid ? `${DEF.identified} Only people whose first campaign is ${cid}.` : DEF.identified },
     { key: "started", label: "Started registration", count: started.size, definition: "Identified external people with an identified registration_start action, or a registration, at or before as-of." },
-    { key: "registered", label: "Registered", count: s.personReg.size, definition: DEF.registered },
+    { key: "registered", label: "Registered", count: regSet.size, definition: cid ? `${DEF.registered} Only registrations through ${cid}.` : DEF.registered },
     {
       key: "confirmed",
       label: s.phase === "pre-event" ? "Confirmed (now)" : "Confirmed at event start",
@@ -208,7 +227,7 @@ export function funnel(data: Dataset, asOf: string) {
   ];
   let noShows: number | null = null;
   if (s.phase !== "pre-event") {
-    stages.push({ key: "attended", label: "Attended (registered)", count: s.registeredAttendees.size, definition: DEF.attendee + " Registered attendees only; walk-ins are reported separately." });
+    stages.push({ key: "attended", label: "Attended (registered)", count: regAttendees, definition: DEF.attendee + " Registered attendees only; walk-ins are reported separately." });
     noShows = [...confirmed].filter((pid) => !s.attendees.has(pid)).length;
   }
   let leak: { from: string; to: string; lost: number; conversion: number } | null = null;
@@ -219,13 +238,15 @@ export function funnel(data: Dataset, asOf: string) {
   }
   const caveats = baseCaveats(s);
   if (s.phase === "pre-event") caveats.push("Before the event there is no attendance yet; see projection for the expected outcome.");
+  if (cid) caveats.push("Walk-ins have no campaign, so a single campaign's funnel leaves them out.");
   return {
     value: {
       asOf: s.label,
       phase: s.phase,
+      campaignId: cid ?? null,
       stages,
-      walkIns: s.phase === "pre-event" ? 0 : s.walkIns.size,
-      actualAttendees: s.attendees.size,
+      walkIns: s.phase === "pre-event" || cid ? 0 : s.walkIns.size,
+      actualAttendees: cid ? regAttendees : s.attendees.size,
       statusAtSnapshot: counts,
       confirmedNoShows: noShows,
       biggestLeak: leak,
@@ -654,30 +675,53 @@ export function person(data: Dataset, personId: string, asOf: string) {
 export function peopleDirectory(
   data: Dataset,
   asOf: string,
-  opts: { q?: string; page?: number; pageSize?: number } = {},
+  opts: {
+    q?: string;
+    page?: number;
+    pageSize?: number;
+    personType?: string;
+    /** registration campaign (the app's attribution rule); "none" = not registered */
+    campaignId?: string;
+    /** latest registration status; "none" = not registered */
+    status?: string;
+    attended?: "yes" | "no";
+    engaged?: "yes" | "no";
+  } = {},
 ) {
   const s = snapshot(data, asOf);
   const p = s.p;
   const q = (opts.q ?? "").trim().toLowerCase();
   const pageSize = Math.min(200, opts.pageSize ?? 50);
   const page = Math.max(1, opts.page ?? 1);
-  const all = p.people.filter((x) => x.ms <= s.asOfMs && (!q || x.person_id.toLowerCase().includes(q) || x.person_name.toLowerCase().includes(q)));
-  const rows = all.slice((page - 1) * pageSize, page * pageSize).map((x) => {
-    const reg = (p.regsByPerson.get(x.person_id) ?? []).filter((r) => r.ms <= s.asOfMs).sort((a, b) => a.ms - b.ms)[0];
-    return {
-      person_id: x.person_id,
-      person_name: x.person_name,
-      person_type: x.person_type,
-      first_campaign_id: x.first_campaign_id,
-      registration_campaign_id: reg?.campaign_id ?? null,
-      latest_status: reg ? (s.statusOf(reg.registration_id, s.asOfMs)?.status ?? null) : null,
-      attended: s.attendees.has(x.person_id),
-      engaged: s.questionAskers.has(x.person_id),
-    };
-  });
+  // fields are computed for every match first, so the filters see all people and not just one page
+  const all = p.people
+    .filter((x) => x.ms <= s.asOfMs && (!q || x.person_id.toLowerCase().includes(q) || x.person_name.toLowerCase().includes(q)) && (!opts.personType || x.person_type === opts.personType))
+    .map((x) => {
+      const reg = (p.regsByPerson.get(x.person_id) ?? []).filter((r) => r.ms <= s.asOfMs).sort((a, b) => a.ms - b.ms)[0];
+      return {
+        person_id: x.person_id,
+        person_name: x.person_name,
+        person_type: x.person_type,
+        first_campaign_id: x.first_campaign_id,
+        registration_campaign_id: reg?.campaign_id ?? null,
+        latest_status: reg ? (s.statusOf(reg.registration_id, s.asOfMs)?.status ?? null) : null,
+        attended: s.attendees.has(x.person_id),
+        engaged: s.questionAskers.has(x.person_id),
+      };
+    })
+    .filter(
+      (r) =>
+        (!opts.campaignId || (opts.campaignId === "none" ? r.registration_campaign_id === null : r.registration_campaign_id === opts.campaignId)) &&
+        (!opts.status || (opts.status === "none" ? r.latest_status === null : r.latest_status === opts.status)) &&
+        (!opts.attended || r.attended === (opts.attended === "yes")) &&
+        (!opts.engaged || r.engaged === (opts.engaged === "yes")),
+    );
+  const rows = all.slice((page - 1) * pageSize, page * pageSize);
+  const basis = [DEF.asOf, DEF.status, DEF.attendee];
+  if (opts.campaignId) basis.push(DEF.attribution);
   return {
     value: { total: all.length, page, pageSize, rows },
-    basis: [DEF.asOf, DEF.status, DEF.attendee],
+    basis,
     caveats: [] as string[],
   } satisfies Result<unknown>;
 }
@@ -786,13 +830,20 @@ export function showupDrivers(data: Dataset, asOf: string) {
 export function tasksView(
   data: Dataset,
   asOf: string,
-  opts: { status?: string; campaign_id?: string; owner_id?: string; overdueOnly?: boolean } = {},
+  opts: { status?: string; campaign_id?: string; owner_id?: string; team?: string; overdueOnly?: boolean } = {},
 ) {
   const { ms } = resolveAsOf(asOf);
   const team = new Map((data.team ?? []).map((t) => [t.owner_id, t]));
   const isOverdue = (t: TaskRow) => t.status !== "done" && !!t.due_at && toMs(t.due_at) < ms;
   const rows = (data.tasks ?? [])
-    .filter((t) => (!opts.status || t.status === opts.status) && (!opts.campaign_id || t.campaign_id === opts.campaign_id) && (!opts.owner_id || t.owner_id === opts.owner_id) && (!opts.overdueOnly || isOverdue(t)))
+    .filter(
+      (t) =>
+        (!opts.status || t.status === opts.status) &&
+        (!opts.campaign_id || t.campaign_id === opts.campaign_id) &&
+        (!opts.owner_id || t.owner_id === opts.owner_id) &&
+        (!opts.team || (t.owner_id ? team.get(t.owner_id)?.team : null) === opts.team) &&
+        (!opts.overdueOnly || isOverdue(t)),
+    )
     .map((t) => ({ ...t, overdue: isOverdue(t), owner_name: t.owner_id ? (team.get(t.owner_id)?.owner_name ?? t.owner_id) : null, team: t.owner_id ? (team.get(t.owner_id)?.team ?? null) : null }));
   const byStatus: Record<string, number> = { todo: 0, doing: 0, blocked: 0, done: 0 };
   for (const t of data.tasks ?? []) byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;

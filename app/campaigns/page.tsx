@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowDownUp, Plus } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth/store";
@@ -103,7 +104,10 @@ export default function CampaignsPage() {
                     <td className="px-2 py-2">{f && <FlagChip level={f.level} title={f.reason} />}</td>
                     <td className="px-2 py-2">
                       <div className="font-medium">
-                        {r.campaign_name} <span className="text-[11px] text-muted">{r.campaign_id}</span> {r.source === "app" && <Badge kind="app">NEW</Badge>}
+                        <Link className="hover:text-brand hover:underline" href={`/campaigns/${encodeURIComponent(r.campaign_id)}`}>
+                          {r.campaign_name}
+                        </Link>{" "}
+                        <span className="text-[11px] text-muted">{r.campaign_id}</span> {r.source === "app" && <Badge kind="app">NEW</Badge>}
                       </div>
                       <div className="text-[11px] text-muted">
                         {r.channel ?? "no channel"} · {r.owner_name ?? "no owner"}

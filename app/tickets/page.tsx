@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { QueryParams } from "@/components/deeplink";
 import TaskDialog, { blankTask, type TaskDraft } from "@/components/TaskDialog";
+import SimulatedTag from "@/components/SimulatedTag";
 import { Badge, Button, Card, Empty, Field, Modal, PageHeader, inputCls } from "@/components/ui";
 import { canActFor, canEditTask, whoCanActFor } from "@/lib/auth/permissions";
 import { useAuth } from "@/lib/auth/store";
@@ -109,6 +110,7 @@ export default function TicketsPage() {
                   <button className="w-full text-left" onClick={() => setOpenId(t.id)}>
                     <div className="flex flex-wrap items-center gap-2">
                       <Status status={t.status} />
+                      {t.simulation_note && <SimulatedTag note={t.simulation_note} />}
                       <span className="text-[14px] font-semibold hover:text-brand">{t.title}</span>
                     </div>
                     <div className="mt-1 text-[12px] text-muted">
@@ -116,11 +118,6 @@ export default function TicketsPage() {
                       {t.assignee_id ? ` · for ${names.get(t.assignee_id) ?? t.assignee_id}` : ""} · raised {fmtDate(t.raised_on)}
                     </div>
                     {t.declineReason && <div className="mt-1 text-[12px]">Reason for declining: {t.declineReason}</div>}
-                    {t.simulation_note && (
-                      <div className="mt-2">
-                        <Simulated note={t.simulation_note} />
-                      </div>
-                    )}
                   </button>
                 </Card>
               ))}

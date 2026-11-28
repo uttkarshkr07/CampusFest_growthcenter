@@ -530,7 +530,7 @@ The menu is grouped **Run, Grow, Fest, Partners, System**. Every figure on every
 - **Sign-in** with one button per demo account (Reviewer and six team members) and role-based editing (table below).
 - **Light and dark mode.**
 - **Deep links:** "Take me there" buttons and links open the exact campaign, task, ticket, record, venue, event, bet, college, data-quality list or event rules.
-- **Mayu,** the fest peacock, fronts the copilot: the panel button, the avatar and a greeting with one of three poses. The persona is a name, a picture and a greeting only; it never changes the rules, evidence or advice.
+- **Mayu,** the fest peacock, fronts the copilot: the large "Ask Mayu" button at the bottom right (dark in light mode, white in dark mode), the avatar and a greeting with one of three poses. The persona is a name, a picture and a greeting only; it never changes the rules, evidence or advice.
 
 **Run**
 - **Overview (mission control):**
@@ -539,15 +539,15 @@ The menu is grouped **Run, Grow, Fest, Partners, System**. Every figure on every
   - **What needs attention:** one ranked feed built from every check the app runs, filterable by your team or all teams. It covers campaign flags, sign-up spikes (with a 7-day follow-up), sign-ups that stopped, spend outliers, capacity, bet verdicts, tickets, overdue tasks, people who can still be recovered, and data quality. Each item has its numbers and owner, and an *Ask copilot* button that fills in the question (it never sends on its own).
   - The leak funnel against the plan, a channel quadrant and table, budget burn, what changed (including the change log), a bets strip and an execution summary.
 - **Copilot:** the full page with saved chat sessions (new, reopen, rename, delete), filtered by dataset. The same chat also opens as a side panel from any page (section 9).
-- **Tasks:** owners, teams, due dates, status (including an *In progress* filter), overdue flags, and the reason and evidence for tasks made from a flag, a bet card or the copilot.
-- **Tickets:** requests between publicity, sponsorship and events. Open, then accepted or declined (with an optional reason), in progress and done. Each ticket has its dated history, comments and linked tasks, and a count of tickets awaiting your team. Each ticket is shown as it stood on the selected date.
+- **Tasks:** a list or a board (To do, In progress, Blocked, Done, with buttons to move a card), filters by status, team, owner and overdue, due dates, and the reason and evidence for tasks made from a flag, a bet card or the copilot.
+- **Tickets:** requests between publicity, sponsorship and events. Open, then accepted or declined (with an optional reason), in progress and done. Each ticket has its dated history, comments and linked tasks, and a count of tickets awaiting your team. Each ticket is shown as it stood on the selected date. Generated tickets on the simulated run carry a small SIMULATED tag; the full note is inside the ticket.
 
 **Grow**
-- **Campaigns:** per-campaign spend, identified, registered, confirmed, attended, show-up, INR per registration, per confirmed and per actual attendee, share of spend against share of attendees, and Scale / Watch / Stop flags with their reason. "+ Task" from any flag.
+- **Campaigns:** per-campaign spend, identified, registered, confirmed, attended, show-up, INR per registration, per confirmed and per actual attendee, share of spend against share of attendees, and Scale / Watch / Stop flags with their reason. "+ Task" from any flag. Each campaign opens its own page: a daily chart of spend, clicks, landing sessions and registration starts, the campaign's funnel (identified by first campaign, later stages by registration campaign; walk-ins have no campaign), its tasks, the people who registered through it and any sponsor link (an association, not proof of added attendees).
 - **Bet tracker:** one card per bet with its KPIs (K01 to K22), verdict, the numbers behind it, minimum sample, spend against budget and a "+ Task" button that records the rule, numbers and date. Thresholds are edited on the cards themselves (simulated run only, logged, restored by Reset), not on the Settings page. On the original data only K01, K20 and K21 can be read, plus proxies for K05 and K14. A Championship tab shows the board.
 - **Actions:** the people behind each leak (confirmed but not engaged, interested but not confirmed, waitlisted, failed a gate scan and never admitted), with full lists.
 - **What-if:** budget moves between campaigns, cuts to the whole budget and show-up changes, with a cautious-to-optimistic range and its assumptions. Before the fest only unspent budget moves.
-- **People:** search, and each person's touches, registration statuses and gate scans in order.
+- **People:** search and filters (person type, registration campaign, latest status, attended, asked a question), and each person's touches, registration statuses and gate scans in order.
 
 **Fest**
 - **Event list:** every program session grouped into events by genre, with rules adapted from the Spring Fest rulebook where a page fits, and each session's seats as of the date.

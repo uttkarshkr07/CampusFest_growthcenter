@@ -174,7 +174,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           )}
         </header>
 
-        <main className="min-w-0 flex-1 p-5">
+        <main className="min-w-0 flex-1 p-5 pb-28">
           {status === "loading" || status === "idle" ? (
             <Spinner label={loadProgress || "Loading the dataset..."} />
           ) : status === "error" ? (
